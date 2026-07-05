@@ -60,7 +60,7 @@ def run_embedding(batch_size: int = 100) -> dict[str, int]:
                     embedding       = vector,
                     embedding_model = EMBEDDING_MODEL,
                     embedded_text   = embedded_text,
-                    created_at      = datetime.now,
+                    created_at      = datetime.now(),
                 ))
                 item.pipeline_status = PipelineStatus.EMBEDDED
                 session.commit()

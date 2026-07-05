@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Backend Pipeline",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pipelines.runner",
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "justMyCode": true
+        }
+    ]
+}

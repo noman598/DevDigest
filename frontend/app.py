@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 import streamlit as st
 import json
 
-from storage.db import save_user_email  # Add this import at top
+from storage.db import save_user_email
 
 # ── Database Functions (Placeholder) ──────────────────────────────────────────
 # These will be implemented later with your actual database
@@ -46,6 +46,72 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+
+# Hero section — paste before any st.form or st.input
+st.markdown("""
+<div style="margin-bottom:0.5rem;">
+  <span style="background:#185fa5;color:#fff;font-size:13px;font-weight:600;
+               padding:5px 14px;border-radius:20px;letter-spacing:0.3px;">
+    DevSnack
+  </span>
+</div>
+<h1 style="font-size:34px;font-weight:600;margin:0.75rem 0 0.5rem;line-height:1.3;">
+  Stop drowning in dev news.<br>
+  <span style="color:#185fa5;">Get only what matters.</span>
+</h1>
+<p style="color:#555;font-size:17px;max-width:560px;line-height:1.8;margin-bottom:1.5rem;">
+  DevSnack pulls trending content from GitHub, Hacker News, Reddit, YouTube, Medium and more —
+  enriches it with AI, and delivers one personalized digest matched to exactly what you care about.
+</p>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+details > summary {
+    font-size: 15px;
+    font-weight: 600;
+    color: #185fa5;
+    cursor: pointer;
+    padding: 10px 16px;
+    background: #e8f1fb;
+    border: 1.5px solid #185fa5;
+    border-radius: 8px;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+details > summary:hover {
+    background: #d0e4f7;
+}
+details[open] > summary {
+    background: #185fa5;
+    color: #fff;
+    border-radius: 8px 8px 0 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+with st.expander("🎬  Behind the scenes — see how it works"):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("**🔵 Content pipeline**")
+        st.caption("① **Scrape** — GitHub, HN, Reddit, YouTube, Medium fetched daily")
+        st.caption("② **Enrich** — Claude extracts summary, stack, topics")
+        st.caption("③ **Embed** — Stored as vectors in Postgres via pgvector")
+    with col2:
+        st.markdown("**🟢 User pipeline**")
+        st.caption("① **Onboard** — You enter interests and preferences")
+        st.caption("② **Embed profile** — Your taste converted to a vector")
+        st.caption("③ **Store** — Re-embedded only when you update prefs")
+    with col3:
+        st.markdown("**🔴 Digest pipeline**")
+        st.caption("① **Match** — Your vector vs all content vectors")
+        st.caption("② **Rank** — Similarity + freshness + popularity → top 5")
+        st.caption("③ **Deliver** — Claude writes and sends your digest")
+    # st.divider()
+    # st.caption("Stack — Python · PostgreSQL + pgvector · Claude · APScheduler · Streamlit")
 
 # ── Custom CSS ──────────────────────────────────────────────────────────────
 st.markdown("""
@@ -299,17 +365,17 @@ def render_step_indicator(current_step: int):
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Header ───────────────────────────────────────────────────────────────────
-st.markdown("""
-<div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">🤖 DevSnack</h1>
-    <p style="font-size: 1.1rem; color: #666; max-width: 600px; margin: 0 auto;">
-        Your daily bite-sized developer news, curated by AI and delivered to your inbox.
-    </p>
-    <p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">
-        ⚡ No more surfing multiple sites — get everything in one personalized email, every day.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+# st.markdown("""
+# <div style="text-align: center; margin-bottom: 2rem;">
+#     <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">🤖 DevSnack</h1>
+#     <p style="font-size: 1.1rem; color: #666; max-width: 600px; margin: 0 auto;">
+#         Your daily bite-sized developer news, curated by AI and delivered to your inbox.
+#     </p>
+#     <p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">
+#         ⚡ No more surfing multiple sites — get everything in one personalized email, every day.
+#     </p>
+# </div>
+# """, unsafe_allow_html=True)
 
 # ── Success State ────────────────────────────────────────────────────────────
 if st.session_state.submitted:

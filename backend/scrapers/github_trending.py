@@ -8,9 +8,9 @@ from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import List
 
-from backend.scrapers.base import BaseScraper, RawItem
-from backend.config import config
-from backend.utils.logger import log
+from scrapers.base import BaseScraper, RawItem
+from config import config
+from utils.logger import log
 
 BASE_URL = "https://github.com/trending"
 

@@ -32,7 +32,7 @@ class Source(Base):
     name       = Column(String, nullable=False, unique=True)   # "github_trending"
     config     = Column(JSON, default={})                      # language, since, etc.
     is_active  = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=datetime.now())
 
     content_items   = relationship("ContentItem",  back_populates="source")
     ingestion_runs  = relationship("IngestionRun", back_populates="source")
@@ -49,10 +49,10 @@ class ContentItem(Base):
     external_id     = Column(String, nullable=False)  # "owner/repo" or article ID
     url             = Column(Text,   nullable=False)
     raw_data        = Column(JSON,   nullable=False)  # full scraped payload
-    scraped_at      = Column(DateTime, default=datetime.now)
+    scraped_at      = Column(DateTime, default=datetime.now())
     pipeline_status = Column(Enum(PipelineStatus), default=PipelineStatus.SCRAPED)
     failure_reason  = Column(Text, nullable=True)
-    created_at      = Column(DateTime, default=datetime.now)
+    created_at      = Column(DateTime, default=datetime.now())
 
     source     = relationship("Source",           back_populates="content_items")
     enrichment = relationship("ContentEnrichment", back_populates="content_item", uselist=False)
@@ -73,7 +73,7 @@ class ContentEnrichment(Base):
     tech_stack      = Column(ARRAY(String), default=[])
     topics          = Column(ARRAY(String), default=[])
     use_case        = Column(String)   # library | tool | tutorial | research | framework | other
-    enriched_at     = Column(DateTime, default=datetime.utcnow)
+    enriched_at     = Column(DateTime, default=datetime.now())
     llm_model       = Column(String)
 
     content_item = relationship("ContentItem", back_populates="enrichment")
@@ -95,7 +95,7 @@ class ContentEmbedding(Base):
     embedding       = Column(Vector(1536))   # pgvector — change dims if you swap model
     embedding_model = Column(String, nullable=False)
     embedded_text   = Column(Text)           # exact text fed to embedding API — for reproducibility
-    created_at      = Column(DateTime, default=datetime.now)
+    created_at      = Column(DateTime, default=datetime.now())
 
     content_item = relationship("ContentItem", back_populates="embeddings")
 
@@ -105,7 +105,7 @@ class IngestionRun(Base):
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_id       = Column(UUID(as_uuid=True), ForeignKey("sources.id"), nullable=False)
-    started_at      = Column(DateTime, default=datetime.now)
+    started_at      = Column(DateTime, default=datetime.now())
     finished_at     = Column(DateTime, nullable=True)
     items_scraped   = Column(Integer, default=0)
     items_new       = Column(Integer, default=0)

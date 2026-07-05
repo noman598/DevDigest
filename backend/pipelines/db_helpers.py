@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
-
+from dataclasses import asdict
+from typing import List
 from sqlalchemy.dialects.postgresql import insert
 
-from backend.storage.db import get_session
-from backend.storage.models import ContentItem, IngestionRun, PipelineStatus, Source
-from backend.utils.logger import log
-
+from storage.db import SessionLocal as get_session
+from storage.models import ContentItem, IngestionRun, PipelineStatus, Source
+from utils.logger import log
+from scrapers.base import RawItem
 
 def get_or_create_source(name: str) -> Source:
     with get_session() as session:
@@ -23,7 +24,7 @@ def start_ingestion_run(source_id: uuid.UUID) -> IngestionRun:
     with get_session() as session:
         run = IngestionRun(
             source_id  = source_id,
-            started_at = datetime.now,
+            started_at = datetime.now(),
             status     = "running",
         )
         session.add(run)
@@ -47,7 +48,7 @@ def finish_ingestion_run(
             log.warning("db_helpers.run_not_found", run_id=str(run_id))
             return
         run.status          = status
-        run.finished_at     = datetime.now
+        run.finished_at     = datetime.now()
         run.items_scraped   = items_scraped
         run.items_new       = items_new
         run.items_enriched  = items_enriched
@@ -69,12 +70,12 @@ def save_items_deduped(raw_items: list[dict], source_id: uuid.UUID) -> int:
         {
             "id"              : uuid.uuid4(),
             "source_id"       : source_id,
-            "external_id"     : item["external_id"],  # "owner/repo"
-            "url"             : item["url"],
-            "raw_data"        : item,
-            "scraped_at"      : datetime.now,
+            "external_id"     : item.title,  # "owner/repo"
+            "url"             : item.url,
+            "raw_data"        : asdict(item),
+            "scraped_at"      : datetime.now(),
             "pipeline_status" : PipelineStatus.SCRAPED,
-            "created_at"      : datetime.now,
+            "created_at"      : datetime.now(),
         }
         for item in raw_items
     ]
@@ -90,3 +91,28 @@ def save_items_deduped(raw_items: list[dict], source_id: uuid.UUID) -> int:
         new_count = result.rowcount
         log.info("db_helpers.dedup_insert", total=len(rows), new=new_count)
         return new_count
+
+
+def upsert_content_items(source: Source, raw_items: List[RawItem]) -> List[ContentItem]:
+    """Dedup insert. Returns only newly inserted rows (pipeline_status='scraped')."""
+    new_items = []
+
+    for raw in raw_items:
+        stmt = (
+            insert(ContentItem)
+            .values(
+                source_id=source.id,
+                external_id=raw.title,   # "owner/repo"
+                url=raw.url,
+                raw_data=asdict(raw),    # dataclass → dict for JSON column
+            )
+            .on_conflict_do_nothing(constraint="uq_source_external")
+            .returning(ContentItem.id)
+        )
+        result = get_session.execute(stmt)
+        get_session.commit()
+
+        if result.rowcount > 0:
+            new_items.append(get_session.get(ContentItem, result.scalar()))
+
+    return new_items

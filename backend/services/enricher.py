@@ -87,7 +87,7 @@ def run_enrichment(batch_size: int = 50) -> dict[str, int]:
                     tech_stack      = enriched.get("tech_stack", []),
                     topics          = enriched.get("topics", []),
                     use_case        = enriched.get("use_case"),
-                    enriched_at     = datetime.now,
+                    enriched_at     = datetime.now(),
                     llm_model       = ENRICHMENT_MODEL,
                 ))
                 item.pipeline_status = PipelineStatus.ENRICHED
