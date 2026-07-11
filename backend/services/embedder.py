@@ -1,15 +1,15 @@
 from datetime import datetime
 
-from openai import OpenAI
+# from openai import OpenAI
 
-from backend.config import config
-from backend.storage.db import get_session
-from backend.storage.models import ContentEmbedding, ContentEnrichment, ContentItem, PipelineStatus
-from backend.utils.logger import log
+from config import config
+from storage.db import SessionLocal as get_session
+from storage.models import ContentEmbedding, ContentEnrichment, ContentItem, PipelineStatus
+from utils.logger import log
+import cohere
+# _client = OpenAI(api_key=config.OPENAI_API_KEY)
 
-_client = OpenAI(api_key=config.OPENAI_API_KEY)
-
-EMBEDDING_MODEL = "text-embedding-3-small"  # 1536 dims, matches Vector(1536) in models.py
+# EMBEDDING_MODEL = "text-embedding-3-small"  # 1536 dims, matches Vector(1536) in models.py
 
 
 def _build_embedded_text(e: ContentEnrichment) -> str:
@@ -22,12 +22,34 @@ def _build_embedded_text(e: ContentEnrichment) -> str:
     return "\n".join(parts)
 
 
-def _get_embedding(text: str) -> list[float]:
-    response = _client.embeddings.create(model=EMBEDDING_MODEL, input=text)
-    return response.data[0].embedding
+# def _get_embedding(text: str) -> list[float]:
+#     response = _client.embeddings.create(model=EMBEDDING_MODEL, input=text)
+#     return response.data[0].embedding
+
+def _get_embedding(text: str):
+    co = cohere.ClientV2(api_key=config.COHERE_API_KEY)
+
+    # text_inputs = [
+    #     {
+    #         "content": [
+    #             {"type": "text", "text": "hello"},
+    #             {"type": "text", "text": "goodbye"}
+    #         ]
+    #     },
+    # ]
+
+    response = co.embed(
+        texts=[text],
+        model="embed-v4.0",
+        input_type="search_document",
+        embedding_types=["float"],
+    )
+    print(response)
+    return response.embeddings.float[0]
 
 
-def run_embedding(batch_size: int = 100) -> dict[str, int]:
+
+def run_embedding(batch_size: int = 50) -> dict[str, int]:
     """
     Process one batch of enriched items. Returns counts for the runner to log.
     Commits per item — idempotent on re-run.
@@ -58,7 +80,7 @@ def run_embedding(batch_size: int = 100) -> dict[str, int]:
                 session.add(ContentEmbedding(
                     content_item_id = item.id,
                     embedding       = vector,
-                    embedding_model = EMBEDDING_MODEL,
+                    embedding_model = 'Cohere',
                     embedded_text   = embedded_text,
                     created_at      = datetime.now(),
                 ))

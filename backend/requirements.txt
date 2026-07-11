@@ -12,3 +12,6 @@ psycopg2-binary==2.9.10
 groq
 streamlit
 pgvector
+instructor
+cohere
+brevo-python

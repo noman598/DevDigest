@@ -1,57 +1,65 @@
 import json
 from datetime import datetime
+import instructor
+from pydantic import BaseModel, Field
+from groq import Groq
+from typing import Literal
+# import anthropic
 
-import anthropic
+from config import config
+from storage.db import SessionLocal as get_session
+from storage.models import ContentEnrichment, ContentItem, PipelineStatus
+from utils.logger import log
 
-from backend.config import config
-from backend.storage.db import get_session
-from backend.storage.models import ContentEnrichment, ContentItem, PipelineStatus
-from backend.utils.logger import log
-
-_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-
+_client = instructor.from_groq(Groq(api_key=config.GROQ_API_KEY), mode=instructor.Mode.JSON)
 # Haiku: cheap + fast for structured extraction. Swap to Sonnet if quality isn't enough.
-ENRICHMENT_MODEL = "claude-haiku-4-5-20251001"
+ENRICHMENT_MODEL = "llama-3.3-70b-versatile"
 
-_PROMPT = """You are a technical content analyst. Given GitHub repository metadata, extract structured information.
+class EnrichmentResult(BaseModel):
+    title: str = Field(description="clean readable repository name")
+    summary: str = Field(description="2-3 sentence summary of what this does and who it's for")
+    tech_stack: list[str] = Field(description="specific technologies/frameworks used")
+    topics: list[str] = Field(description="broad topic categories")
+    use_case: Literal["library", "tool", "tutorial", "research", "framework", "dataset", "other"]
 
-Respond ONLY with a valid JSON object — no markdown, no explanation, no code fences.
 
-Schema:
-{{
-  "title": "clean readable repository name",
-  "summary": "2-3 sentence summary of what this does and who it is for",
-  "tech_stack": ["array", "of", "specific", "technologies"],
-  "topics": ["broad", "topic", "categories"],
-  "use_case": "one of: library | tool | tutorial | research | framework | dataset | other"
-}}
+# _PROMPT = """You are a technical content analyst. Given GitHub repository metadata, extract structured information.
 
-Repository data:
-{repo_data}"""
+# Respond ONLY with a valid JSON object — no markdown, no explanation, no code fences.
+
+# Schema:
+# {{
+#   "title": "clean readable repository name",
+#   "summary": "2-3 sentence summary of what this does and who it is for",
+#   "tech_stack": ["array", "of", "specific", "technologies"],
+#   "topics": ["broad", "topic", "categories"],
+#   "use_case": "one of: library | tool | tutorial | research | framework | dataset | other"
+# }}
+
+# Repository data:
+# {repo_data}"""
 
 
 def _build_repo_text(raw: dict) -> str:
-    """Produce a clean, token-efficient text block from raw scraped data."""
-    lines = []
-    for key in ("name", "description", "language"):
-        if raw.get(key):
-            lines.append(f"{key.capitalize()}: {raw[key]}")
-    if raw.get("topics"):
-        lines.append(f"Topics: {', '.join(raw['topics'])}")
-    if raw.get("stars"):
-        lines.append(f"Stars: {raw['stars']}")
-    if raw.get("readme"):
-        lines.append(f"README (truncated):\n{raw['readme'][:3000]}")
+    """Matches actual scraped shape: {source, title, url, description, metadata:{language, stars_today, total_stars}}"""
+    meta = raw.get("metadata", {})
+    lines = [
+        f"Repository: {raw.get('title')}",
+        f"Description: {raw.get('description') or 'N/A'}",
+        f"Language: {meta.get('language', 'Unknown')}",
+        f"Total stars: {meta.get('total_stars', '0')}",
+        f"Stars today: {meta.get('stars_today', '0')}",
+    ]
     return "\n".join(lines)
 
 
 def _call_llm(repo_text: str) -> dict:
-    response = _client.messages.create(
+    return _client.chat.completions.create(
         model=ENRICHMENT_MODEL,
         max_tokens=1024,
-        messages=[{"role": "user", "content": _PROMPT.format(repo_data=repo_text)}],
+        messages=[{"role": "user", "content": f"Analyze this GitHub repository:\n\n{repo_text}"}],
+        response_model=EnrichmentResult,
     )
-    return json.loads(response.content[0].text.strip())
 
 
 def run_enrichment(batch_size: int = 50) -> dict[str, int]:
@@ -78,15 +86,15 @@ def run_enrichment(batch_size: int = 50) -> dict[str, int]:
         for item in pending:
             counts["processed"] += 1
             try:
-                enriched = _call_llm(_build_repo_text(item.raw_data))
+                enriched = _call_llm(_build_repo_text(item.raw_data)) #Object Response
 
                 session.add(ContentEnrichment(
                     content_item_id = item.id,
-                    title           = enriched.get("title"),
-                    summary         = enriched.get("summary"),
-                    tech_stack      = enriched.get("tech_stack", []),
-                    topics          = enriched.get("topics", []),
-                    use_case        = enriched.get("use_case"),
+                    title           = enriched.title,
+                    summary         = enriched.summary,
+                    tech_stack      = enriched.tech_stack,
+                    topics          = enriched.topics,
+                    use_case        = enriched.use_case,
                     enriched_at     = datetime.now(),
                     llm_model       = ENRICHMENT_MODEL,
                 ))

@@ -1,11 +1,4 @@
-"""
-Storage layer — PostgreSQL via SQLAlchemy.
 
-Same public function signatures as the old SQLite version (save_items,
-get_items_last_24h, was_digest_sent_today, log_digest_sent, init_db) —
-this is the whole point of isolating storage behind a module: main.py
-and every other caller didn't need to change at all for this swap.
-"""
 import json
 from datetime import datetime, timedelta, timezone
 from typing import List

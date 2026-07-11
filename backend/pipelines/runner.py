@@ -7,8 +7,8 @@ from pipelines.db_helpers import (
     upsert_content_items,
 )
 from scrapers.github_trending import GitHubTrendingScraper
-# from services.embedder import run_embedding
-# from services.enricher import run_enrichment
+from services.embedder import run_embedding
+from services.enricher import run_enrichment
 from storage.db import init_db
 from utils.logger import log
 
@@ -47,15 +47,15 @@ def run_flow1(source_name: str = "github_trending") -> None:
         # ── Stage 3: Enrich ───────────────────────────────────────────────────
         # Picks up ALL items with status='scraped' — including any that failed
         # in a previous run. Batch size keeps LLM costs predictable.
-        log.info("pipeline.stage3.start")
+        # log.info("pipeline.stage3.start")
         # enrich_counts = run_enrichment(batch_size=50)
         # log.info("pipeline.stage3.done", **enrich_counts)
 
         # ── Stage 4: Embed ────────────────────────────────────────────────────
         # Picks up ALL items with status='enriched'.
         log.info("pipeline.stage4.start")
-        # embed_counts = run_embedding(batch_size=100)
-        # log.info("pipeline.stage4.done", **embed_counts)
+        embed_counts = run_embedding(batch_size=50)
+        log.info("pipeline.stage4.done", **embed_counts)
 
         # finish_ingestion_run(
         #     run.id,

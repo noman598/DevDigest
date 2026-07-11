@@ -10,12 +10,13 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
 
     # Email
-    RESEND_API_KEY: str = ""
+    BREVO_API_KEY: str = ""
     EMAIL_FROM: str = ""
     EMAIL_TO: str = ""
     GROQ_API_KEY: str = ""
     # Database
     DATABASE_URL: str = ''
+    COHERE_API_KEY: str = ''
 
     # Scraper
     GITHUB_TRENDING_LANGUAGE: str = ""
