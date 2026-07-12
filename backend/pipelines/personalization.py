@@ -11,7 +11,7 @@ from utils.logger import log
 LLM_BATCH_SIZE = 15
 
 
-def get_candidate_items(session, user_embedding: list[float], limit: int = 20, hours: int = 48):
+def get_candidate_items(session, user_embedding: list[float], limit: int = 40, hours: int = 48):
     query = text(f"""
         SELECT
             ci.id, ci.external_id, ci.url, ci.raw_data,
@@ -20,14 +20,36 @@ def get_candidate_items(session, user_embedding: list[float], limit: int = 20, h
         FROM content_items ci
         JOIN content_enrichments ce ON ce.content_item_id = ci.id
         JOIN content_embeddings cemb ON cemb.content_item_id = ci.id
-        WHERE ci.pipeline_status = 'embedded'
-          AND ci.scraped_at >= NOW() - INTERVAL '{hours} hours'
+        WHERE ci.pipeline_status = 'EMBEDDED'
+         
         ORDER BY distance ASC
         LIMIT :limit
     """)
+    #  AND ci.scraped_at >= NOW() - INTERVAL '{hours} hours'
     result = session.execute(query, {"user_vec": user_embedding, "limit": limit})
     return result.fetchall()
 
+
+def filter_disliked(candidates, disliked_tags: list[str],threshold: float = 0.5):
+    """Hard-exclude any item whose tech_stack or topics overlap with disliked_tags."""
+    if not disliked_tags:
+        return candidates
+
+    disliked_lower = {t.lower() for t in disliked_tags}
+
+    filtered = []
+    for row in candidates:
+        item_tags = {t.lower() for t in (row.tech_stack or [])} | {t.lower() for t in (row.topics or [])}
+
+        if not item_tags:
+            filtered.append(row)
+            continue
+        overlap_count = len(item_tags & disliked_lower)
+        overlap_ratio = overlap_count / len(item_tags)
+        if overlap_ratio > threshold:
+            continue
+        filtered.append(row)
+    return filtered
 
 def rank_items(candidates, weight_similarity=0.7, weight_popularity=0.3):
     ranked = []
@@ -63,11 +85,11 @@ def get_user_candidates(session, user: UserProfile, top_n: int = 5):
     if not user_emb:
         return None
 
-    candidates = get_candidate_items(session, user_emb.embedding, limit=5)
+    candidates = get_candidate_items(session, user_emb.embedding.tolist(), limit=5)
     if not candidates:
         return None
-
-    return rank_items(candidates)[:top_n]
+    candidates = filter_disliked(candidates, user.disliked_tags)
+    return rank_items(candidates)[:5]
 
 
 def run_digest_pipeline(top_n: int = 5) -> dict[str, int]:

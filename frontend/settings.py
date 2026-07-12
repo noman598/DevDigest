@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     # Database
     DATABASE_URL: str = ''
-
+    COHERE_API_KEY: str = ''
+    GEMINI_API_KEY: str = ''
     # Scraper
     GITHUB_TRENDING_LANGUAGE: str = ""
     GITHUB_TRENDING_SINCE: str = "daily"

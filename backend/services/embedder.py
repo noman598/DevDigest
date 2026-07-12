@@ -6,7 +6,10 @@ from config import config
 from storage.db import SessionLocal as get_session
 from storage.models import ContentEmbedding, ContentEnrichment, ContentItem, PipelineStatus
 from utils.logger import log
-import cohere
+from google import genai
+from google.genai.types import EmbedContentConfig
+
+# import cohere
 # _client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 # EMBEDDING_MODEL = "text-embedding-3-small"  # 1536 dims, matches Vector(1536) in models.py
@@ -27,25 +30,39 @@ def _build_embedded_text(e: ContentEnrichment) -> str:
 #     return response.data[0].embedding
 
 def _get_embedding(text: str):
-    co = cohere.ClientV2(api_key=config.COHERE_API_KEY)
+    # co = cohere.ClientV2(api_key=config.COHERE_API_KEY)
 
-    # text_inputs = [
-    #     {
-    #         "content": [
-    #             {"type": "text", "text": "hello"},
-    #             {"type": "text", "text": "goodbye"}
-    #         ]
-    #     },
-    # ]
+    # # text_inputs = [
+    # #     {
+    # #         "content": [
+    # #             {"type": "text", "text": "hello"},
+    # #             {"type": "text", "text": "goodbye"}
+    # #         ]
+    # #     },
+    # # ]
 
-    response = co.embed(
-        texts=[text],
-        model="embed-v4.0",
-        input_type="search_document",
-        embedding_types=["float"],
+    # response = co.embed(
+    #     texts=[text],
+    #     model="embed-v4.0",
+    #     input_type="search_document",
+    #     embedding_types=["float"],
+    # )
+    # print(response)
+    # return response.embeddings.float[0]
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
+
+    result = client.models.embed_content(
+            model="gemini-embedding-001",
+            contents=text,
+            config=EmbedContentConfig(
+        task_type="RETRIEVAL_DOCUMENT",   # or RETRIEVAL_QUERY for user profile side
+        output_dimensionality=1536,       # explicitly pin it — don't rely on the 3072 default
+    ),
     )
-    print(response)
-    return response.embeddings.float[0]
+
+    print(result.embeddings)
+    vector = result.embeddings[0].values   # <-- extract the actual float list
+    return vector
 
 
 
@@ -80,7 +97,7 @@ def run_embedding(batch_size: int = 50) -> dict[str, int]:
                 session.add(ContentEmbedding(
                     content_item_id = item.id,
                     embedding       = vector,
-                    embedding_model = 'Cohere',
+                    embedding_model = 'Google-GenAI',
                     embedded_text   = embedded_text,
                     created_at      = datetime.now(),
                 ))

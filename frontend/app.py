@@ -12,32 +12,11 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import streamlit as st
 import json
-
-from storage.db import save_user_email
-
-# ── Database Functions (Placeholder) ──────────────────────────────────────────
-# These will be implemented later with your actual database
-def save_user_profile(email: str, name: str, preferences: dict) -> bool:
-    """
-    Save user profile and preferences to database.
-    Returns True if successful.
-    """
-    # TODO: Implement database storage
-    # Example: 
-    # db.users.insert_one({
-    #     "email": email,
-    #     "name": name,
-    #     "preferences": preferences,
-    #     "created_at": datetime.utcnow(),
-    #     "updated_at": datetime.utcnow(),
-    #     "active": True
-    # })
-    return True
-
-def user_exists(email: str) -> bool:
-    """Check if user already exists in database."""
-    # TODO: Implement database check
-    return False
+from storage.db import init_db
+from utils.logger import log
+init_db()
+from storage.db import save_user_profile, user_exists
+from utils.embedding import run_user_embedding
 
 # ── Page Configuration ────────────────────────────────────────────────────────
 st.set_page_config(
@@ -473,7 +452,7 @@ elif st.session_state.current_step == 2:
         st.info("ℹ️ **Note:** Currently we support **GitHub Trending** only. More sources coming soon! 🚀")
         # Initialize selected sources
         if 'selected_sources' not in st.session_state.form_data:
-            st.session_state.form_data['selected_sources'] = ['github_trending', 'hacker_news']
+            st.session_state.form_data['selected_sources'] = ['github_trending']
         
         # Display sources in a grid
         cols = st.columns(3)
@@ -668,44 +647,43 @@ elif st.session_state.current_step == 4:
     with col_btn1:
         if st.button("← Back", use_container_width=True):
             go_to_step(3)
+
+    with col_btn2:
+        if st.button("🍿 Get My DevSnack", type="primary", use_container_width=True):
+            if not st.session_state.form_data.get('email'):
+                st.error("Email is required.")
+            else:
+                with st.spinner("Saving your preferences..."):
+                    success = save_user_profile(st.session_state.form_data)
+
+                    if success:
+                        st.session_state.submitted = True
+                        try:
+                            run_user_embedding(batch_size=1)
+                        except Exception as e:
+                            log.error("user_embedding_trigger_failed",
+                                    email=st.session_state.form_data.get('email'),
+                                    error=str(e))
+                        st.rerun()
+                    else:
+                        st.error("Failed to save. Please try again.")
     
     # with col_btn2:
-    #     if st.button("✅ Subscribe to DevDigest", type="primary", use_container_width=True):
+    #     if st.button("🍿 Get My DevSnack", type="primary", use_container_width=True):
     #         # Validate
     #         if not st.session_state.form_data.get('email'):
     #             st.error("Email is required.")
-    #         elif not st.session_state.form_data.get('selected_sources'):
-    #             st.error("Please select at least one source.")
     #         else:
-    #             # Save to database
-    #             with st.spinner("Saving your preferences..."):
-    #                 success = save_user_profile(
-    #                     email=st.session_state.form_data['email'],
-    #                     name=st.session_state.form_data.get('name', ''),
-    #                     preferences=st.session_state.form_data
-    #                 )
+    #             # Save email to database
+    #             with st.spinner("Saving your email..."):
+                    
+    #                 success = save_user_email(st.session_state.form_data['email'])
                     
     #                 if success:
     #                     st.session_state.submitted = True
     #                     st.rerun()
     #                 else:
-    #                     st.error("Failed to save preferences. Please try again.")
-    with col_btn2:
-        if st.button("🍿 Get My DevSnack", type="primary", use_container_width=True):
-            # Validate
-            if not st.session_state.form_data.get('email'):
-                st.error("Email is required.")
-            else:
-                # Save email to database
-                with st.spinner("Saving your email..."):
-                    
-                    success = save_user_email(st.session_state.form_data['email'])
-                    
-                    if success:
-                        st.session_state.submitted = True
-                        st.rerun()
-                    else:
-                        st.error("Failed to save. Please try again.")
+    #                     st.error("Failed to save. Please try again.")
 
 # ── Footer ──────────────────────────────────────────────────────────────────
 st.markdown("""

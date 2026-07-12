@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = ''
     COHERE_API_KEY: str = ''
+    GEMINI_API_KEY: str = ''
 
     # Scraper
     GITHUB_TRENDING_LANGUAGE: str = ""

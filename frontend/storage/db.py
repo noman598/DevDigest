@@ -1,11 +1,4 @@
-"""
-Storage layer — PostgreSQL via SQLAlchemy.
 
-Same public function signatures as the old SQLite version (save_items,
-get_items_last_24h, was_digest_sent_today, log_digest_sent, init_db) —
-this is the whole point of isolating storage behind a module: main.py
-and every other caller didn't need to change at all for this swap.
-"""
 import json
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -16,52 +9,21 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from storage.models import UserProfile
+
 # from scrapers.base import RawItem
 from config import config
 from utils.logger import log
+from storage.models import Base
 
-Base = declarative_base()
 engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine)
 
-
-class Item(Base):
-    __tablename__ = "items"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    source = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    url = Column(String, nullable=False)
-    description = Column(Text)
-    item_metadata = Column(Text)  # JSON-encoded string
-    scraped_at = Column(DateTime(timezone=True), nullable=False)
-
-    __table_args__ = (UniqueConstraint("source", "url", name="uq_source_url"),)
-
-
-class DigestLog(Base):
-    __tablename__ = "digest_log"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    digest_date = Column(String, nullable=False)  # ISO date string, e.g. "2026-06-21"
-    sent_to = Column(String, nullable=False)
-    item_count = Column(Integer, nullable=False)
-    sent_at = Column(DateTime(timezone=True), nullable=False)
-
-    __table_args__ = (UniqueConstraint("digest_date", "sent_to", name="uq_date_recipient"),)
-
-class UserProfile(Base):
-    __tablename__ = "user_profiles"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    email = Column(String, nullable=False, unique=True, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    __table_args__ = (UniqueConstraint("email", name="uq_user_email"),)
-
 def init_db():
+    from storage import models
     Base.metadata.create_all(engine)
     log.info("db_initialized", url=config.DATABASE_URL.split("@")[-1])  # don't log credentials
+
 
 
 def save_user_email(email: str) -> bool:
@@ -99,3 +61,59 @@ def save_user_email(email: str) -> bool:
     except Exception as e:
         log.error("save_user_email_error", email=email, error=str(e))
         return False
+    
+
+
+
+def save_user_profile(form_data: dict) -> bool:
+    """
+    Upsert user profile — insert new, or update existing row if email
+    already exists (re-submitting the wizard updates preferences).
+    """
+    email = form_data.get("email", "").lower().strip()
+    if not email:
+        return False
+
+    try:
+        with SessionLocal() as session:
+            stmt = pg_insert(UserProfile).values(
+                email               = email,
+                name                = form_data.get("name", ""),
+                selected_sources    = form_data.get("selected_sources", []),
+                liked_tags          = form_data.get("liked_tags", []),
+                disliked_tags       = form_data.get("disliked_tags", []),
+                custom_interests    = form_data.get("custom_interests", ""),
+                keyword_alerts      = form_data.get("keyword_alerts", ""),
+                frequency           = form_data.get("frequency", "daily"),
+                delivery_time       = form_data.get("delivery_time", "08:00"),
+                include_summary     = form_data.get("include_summary", True),
+                include_why_matters = form_data.get("include_why_matters", True),
+            ).on_conflict_do_update(
+                index_elements=["email"],
+                set_={
+                    "name":                form_data.get("name", ""),
+                    "selected_sources":    form_data.get("selected_sources", []),
+                    "liked_tags":          form_data.get("liked_tags", []),
+                    "disliked_tags":       form_data.get("disliked_tags", []),
+                    "custom_interests":    form_data.get("custom_interests", ""),
+                    "keyword_alerts":      form_data.get("keyword_alerts", ""),
+                    "frequency":           form_data.get("frequency", "daily"),
+                    "delivery_time":       form_data.get("delivery_time", "08:00"),
+                    "include_summary":     form_data.get("include_summary", True),
+                    "include_why_matters": form_data.get("include_why_matters", True),
+                    "updated_at":          datetime.now(),
+                },
+            )
+            session.execute(stmt)
+            session.commit()
+            log.info("user_profile_saved", email=email)
+            return True
+
+    except Exception as e:
+        log.error("save_user_profile_error", email=email, error=str(e))
+        return False
+
+
+def user_exists(email: str) -> bool:
+    with SessionLocal() as session:
+        return session.query(UserProfile).filter(UserProfile.email == email.lower().strip()).first() is not None

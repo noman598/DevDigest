@@ -77,28 +77,91 @@ def _render_html(summaries: List[dict]) -> str:
 #         log.error("email_send_failed", error=str(e))
 #         raise
 
+# def build_digest_html(user_name: str, digest, ranked_items: list[dict]) -> str:
+#     items_html = ""
+#     for item, digest_item in zip(ranked_items, digest['items']):  # ← Use digest['items']
+#         items_html += f"""
+#         <div style="margin-bottom:16px;padding:12px;border-left:3px solid #185fa5;">
+#             <a href="{item['url']}" style="font-weight:600;color:#185fa5;text-decoration:none;">{item['title']}</a>
+#             <p style="margin:4px 0 0;color:#333;font-size:14px;">{digest_item['one_liner']}</p>  <!-- ← Use dict access -->
+#         </div>
+#         """
 
-# services/mailer.py — add this function (keep whatever SMTP/provider setup you already have)
-def build_digest_html(user_name: str, digest, ranked_items: list[dict]) -> str:
+#     return f"""
+#     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+#         <h2>Hey {user_name or 'there'} 👋</h2>
+#         <p>{digest['intro']}</p>  <!-- ← Use dict access -->
+#         {items_html}
+#         <p style="color:#999;font-size:12px;">You're receiving this because you subscribed to DevSnack.</p>
+#     </div>
+#     """
+
+# services/mailer.py
+
+def build_digest_html(user_name: str, digest: dict, ranked_items: list) -> str:
     items_html = ""
-    for item, digest_item in zip(ranked_items, digest.items):
+    for item, digest_item in zip(ranked_items, digest["items"]):
+        # item may be a Row (dict-style) or dict — handle both safely
+        title      = item["title"] if not hasattr(item, "title") else item.title
+        url        = item["url"] if not hasattr(item, "url") else item.url
+        summary    = item["summary"] if not hasattr(item, "summary") else item.summary
+        tech_stack = item["tech_stack"] if not hasattr(item, "tech_stack") else item.tech_stack
+
+        tech_badges = "".join(
+            f'<span style="display:inline-block;background:#eef4fc;color:#185fa5;'
+            f'font-size:11px;font-weight:600;padding:3px 8px;border-radius:12px;'
+            f'margin-right:6px;">{t}</span>'
+            for t in (tech_stack or [])[:3]
+        )
+
         items_html += f"""
-        <div style="margin-bottom:16px;padding:12px;border-left:3px solid #185fa5;">
-            <a href="{item['url']}" style="font-weight:600;color:#185fa5;text-decoration:none;">{item['title']}</a>
-            <p style="margin:4px 0 0;color:#333;font-size:14px;">{digest_item.one_liner}</p>
+        <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:10px;
+                    padding:18px 20px;margin-bottom:14px;">
+            <a href="{url}" style="font-size:16px;font-weight:700;color:#111;
+               text-decoration:none;line-height:1.4;">{title}</a>
+
+            <div style="margin:8px 0 10px;">{tech_badges}</div>
+
+            <p style="margin:0 0 10px;color:#444;font-size:14px;line-height:1.6;">
+                {summary}
+            </p>
+
+            <div style="background:#f5f9ff;border-left:3px solid #185fa5;
+                        padding:8px 12px;border-radius:0 6px 6px 0;">
+                <p style="margin:0;color:#185fa5;font-size:12px;font-weight:700;
+                          text-transform:uppercase;letter-spacing:0.4px;">
+                    Why it matters
+                </p>
+                <p style="margin:4px 0 0;color:#333;font-size:13.5px;line-height:1.5;">
+                    {digest_item["one_liner"]}
+                </p>
+            </div>
         </div>
         """
 
     return f"""
-    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-        <h2>Hey {user_name or 'there'} 👋</h2>
-        <p>{digest.intro}</p>
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px;
+                margin:0 auto;background:#f9fafb;padding:24px;">
+
+        <div style="text-align:center;margin-bottom:24px;">
+            <span style="background:#185fa5;color:#fff;font-size:12px;font-weight:700;
+                         padding:5px 14px;border-radius:20px;letter-spacing:0.3px;">
+                DEVSNACK
+            </span>
+        </div>
+
+        <h2 style="color:#111;font-size:20px;margin:0 0 8px;">Hey {user_name or 'there'} 👋</h2>
+        <p style="color:#555;font-size:14.5px;line-height:1.6;margin:0 0 24px;">
+            {digest["intro"]}
+        </p>
+
         {items_html}
-        <p style="color:#999;font-size:12px;">You're receiving this because you subscribed to DevSnack.</p>
+
+        <p style="text-align:center;color:#aaa;font-size:11.5px;margin-top:28px;">
+            You're receiving this because you subscribed to DevSnack.
+        </p>
     </div>
     """
-
-
 def send_digest_email(to_email: str, subject: str, html_content: str) -> bool:
     try:
         response = _client.transactional_emails.send_transac_email(

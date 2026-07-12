@@ -47,9 +47,9 @@ def run_flow1(source_name: str = "github_trending") -> None:
         # ── Stage 3: Enrich ───────────────────────────────────────────────────
         # Picks up ALL items with status='scraped' — including any that failed
         # in a previous run. Batch size keeps LLM costs predictable.
-        # log.info("pipeline.stage3.start")
-        # enrich_counts = run_enrichment(batch_size=50)
-        # log.info("pipeline.stage3.done", **enrich_counts)
+        log.info("pipeline.stage3.start")
+        enrich_counts = run_enrichment(batch_size=50)
+        log.info("pipeline.stage3.done", **enrich_counts)
 
         # ── Stage 4: Embed ────────────────────────────────────────────────────
         # Picks up ALL items with status='enriched'.

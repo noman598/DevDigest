@@ -5,7 +5,7 @@
             "name": "Run Backend Pipeline",
             "type": "debugpy",
             "request": "launch",
-            "module": "pipelines.runner",
+            "module": "pipelines.personalization",
             "cwd": "${workspaceFolder}/backend",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/backend/.env",

@@ -13,10 +13,10 @@ from pgvector.sqlalchemy import Vector
 Base = declarative_base()
 
 class PipelineStatus(str, PyEnum):
-    SCRAPED  = "scraped"
-    ENRICHED = "enriched"
-    EMBEDDED = "embedded"
-    FAILED   = "failed"
+    SCRAPED  = "SCRAPED"
+    ENRICHED = "ENRICHED"
+    EMBEDDED = "EMBEDDED"
+    FAILED   = "FAILED"
 
 
 class IngestionStatus(str, PyEnum):
