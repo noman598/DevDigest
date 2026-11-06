@@ -1,75 +1,107 @@
-import json
 from datetime import datetime
-import instructor
+from typing import Literal, Optional
+import asyncio
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
-from groq import Groq
-from typing import Literal
-# import anthropic
 
 from config import config
+from services.llm import BudgetUsageCallback, is_within_budget
 from storage.db import SessionLocal as get_session
 from storage.models import ContentEnrichment, ContentItem, PipelineStatus
 from utils.logger import log
 
-_client = instructor.from_groq(Groq(api_key=config.GROQ_API_KEY), mode=instructor.Mode.JSON)
-# Haiku: cheap + fast for structured extraction. Swap to Sonnet if quality isn't enough.
-ENRICHMENT_MODEL = "llama-3.3-70b-versatile"
+ENRICHMENT_MODEL = "qwen/qwen3.8-27b"
+
 
 class EnrichmentResult(BaseModel):
-    title: str = Field(description="clean readable repository name")
-    summary: str = Field(description="2-3 sentence summary of what this does and who it's for")
-    tech_stack: list[str] = Field(description="specific technologies/frameworks used")
-    topics: list[str] = Field(description="broad topic categories")
-    use_case: Literal["library", "tool", "tutorial", "research", "framework", "dataset", "other"]
-
-
-# _PROMPT = """You are a technical content analyst. Given GitHub repository metadata, extract structured information.
-
-# Respond ONLY with a valid JSON object — no markdown, no explanation, no code fences.
-
-# Schema:
-# {{
-#   "title": "clean readable repository name",
-#   "summary": "2-3 sentence summary of what this does and who it is for",
-#   "tech_stack": ["array", "of", "specific", "technologies"],
-#   "topics": ["broad", "topic", "categories"],
-#   "use_case": "one of: library | tool | tutorial | research | framework | dataset | other"
-# }}
-
-# Repository data:
-# {repo_data}"""
-
-
-def _build_repo_text(raw: dict) -> str:
-    """Matches actual scraped shape: {source, title, url, description, metadata:{language, stars_today, total_stars}}"""
-    meta = raw.get("metadata", {})
-    lines = [
-        f"Repository: {raw.get('title')}",
-        f"Description: {raw.get('description') or 'N/A'}",
-        f"Language: {meta.get('language', 'Unknown')}",
-        f"Total stars: {meta.get('total_stars', '0')}",
-        f"Stars today: {meta.get('stars_today', '0')}",
-    ]
-    return "\n".join(lines)
-
-
-def _call_llm(repo_text: str) -> dict:
-    return _client.chat.completions.create(
-        model=ENRICHMENT_MODEL,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": f"Analyze this GitHub repository:\n\n{repo_text}"}],
-        response_model=EnrichmentResult,
+    title: str = Field(description="clean readable repository or article title")
+    summary: str = Field(description="2-3 sentence summary of what this does, who it's for, and why it matters")
+    tech_stack: list[str] = Field(default=[], description="specific technologies/frameworks used or mentioned")
+    topics: list[str] = Field(default=[], description="broad topic categories (e.g. AI/ML, DevOps, LLMs)")
+    use_case: Literal["library", "tool", "tutorial", "research", "framework", "dataset", "announcement", "other"] = Field(
+        description="primary classification of the content"
     )
 
 
-def run_enrichment(batch_size: int = 50) -> dict[str, int]:
+# LangChain Prompt Template
+_ENRICHMENT_PROMPT = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        "You are an expert technical content analyst. Analyze the following developer content "
+        "and extract accurate, structured metadata.",
+    ),
+    ("human", "Content item to analyze:\n\n{content_text}"),
+])
+
+
+def _get_llm(content_item_id: Optional[str] = None):
+    callbacks = [
+        BudgetUsageCallback(
+            operation="enrichment",
+            provider="groq",
+            content_item_id=content_item_id,
+        )
+    ]
+    llm = ChatGroq(
+        model=ENRICHMENT_MODEL,
+        api_key=config.GROQ_API_KEY,
+        temperature=0.1,
+        max_tokens=1024,
+        callbacks=callbacks,
+    )
+    return _ENRICHMENT_PROMPT | llm.with_structured_output(EnrichmentResult)
+
+
+def _build_content_text(raw: dict) -> str:
+    """Formats raw item data whether it is from GitHub or an RSS/News source."""
+    source = raw.get("source", "")
+    title = raw.get("title", "")
+    desc = raw.get("description") or "N/A"
+    meta = raw.get("metadata", {})
+
+    lines = [
+        f"Source: {source}",
+        f"Title: {title}",
+        f"Description: {desc}",
+    ]
+
+    if "language" in meta:
+        lines.append(f"Language: {meta.get('language')}")
+    if "total_stars" in meta:
+        lines.append(f"Total stars: {meta.get('total_stars')}")
+    if "stars_today" in meta:
+        lines.append(f"Stars today: {meta.get('stars_today')}")
+    if "categories" in meta and meta.get("categories"):
+        lines.append(f"Categories: {', '.join(meta.get('categories'))}")
+    if "published_at" in meta:
+        lines.append(f"Published at: {meta.get('published_at')}")
+
+    return "\n".join(lines)
+
+
+async def enrich_content_item(item: ContentItem) -> EnrichmentResult:
+    """Enriches a single content item using LangChain ChatGroq."""
+    chain = _get_llm(content_item_id=str(item.id))
+    content_text = _build_content_text(item.raw_data or {})
+    return await chain.ainvoke({"content_text": content_text})
+
+
+async def run_enrichment(batch_size: int = 50) -> dict[str, int]:
     """
-    Process one batch of scraped items. Returns counts for the runner to log.
-    Commits per item so a crash doesn't roll back the whole batch.
+    Processes one batch of scraped items using LangChain.
+    Commits per item so a failure doesn't roll back the whole batch.
     """
     counts = {"processed": 0, "succeeded": 0, "failed": 0}
+    sem = asyncio.Semaphore(5)
 
     with get_session() as session:
+        # Emergency circuit-breaker: budget limit check
+        if not is_within_budget(session):
+            log.warning("enricher.aborted_budget_exceeded")
+            return counts
+
         pending = (
             session.query(ContentItem)
             .filter(ContentItem.pipeline_status == PipelineStatus.SCRAPED)
@@ -83,33 +115,40 @@ def run_enrichment(batch_size: int = 50) -> dict[str, int]:
 
         log.info("enricher.starting", count=len(pending))
 
-        for item in pending:
+        async def _process_single(item):
+            async with sem:
+                return await enrich_content_item(item)
+
+        tasks = [_process_single(item) for item in pending]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for item, res in zip(pending, results):
             counts["processed"] += 1
-            try:
-                enriched = _call_llm(_build_repo_text(item.raw_data)) #Object Response
-
-                session.add(ContentEnrichment(
-                    content_item_id = item.id,
-                    title           = enriched.title,
-                    summary         = enriched.summary,
-                    tech_stack      = enriched.tech_stack,
-                    topics          = enriched.topics,
-                    use_case        = enriched.use_case,
-                    enriched_at     = datetime.now(),
-                    llm_model       = ENRICHMENT_MODEL,
-                ))
-                item.pipeline_status = PipelineStatus.ENRICHED
-                session.commit()
-                counts["succeeded"] += 1
-                log.info("enricher.item_done", external_id=item.external_id)
-
-            except Exception as e:
+            if isinstance(res, Exception):
                 session.rollback()
                 item.pipeline_status = PipelineStatus.FAILED
-                item.failure_reason = f"enrichment_error: {e}"
+                item.failure_reason = f"enrichment_error: {res}"
                 session.commit()
                 counts["failed"] += 1
-                log.error("enricher.item_failed", external_id=item.external_id, error=str(e))
+                log.error("enricher.item_failed", external_id=item.external_id, error=str(res))
+                continue
+
+            session.add(
+                ContentEnrichment(
+                    content_item_id=item.id,
+                    title=res.title,
+                    summary=res.summary,
+                    tech_stack=res.tech_stack,
+                    topics=res.topics,
+                    use_case=res.use_case,
+                    enriched_at=datetime.now(),
+                    llm_model=ENRICHMENT_MODEL,
+                )
+            )
+            item.pipeline_status = PipelineStatus.ENRICHED
+            session.commit()
+            counts["succeeded"] += 1
+            log.info("enricher.item_done", external_id=item.external_id)
 
     log.info("enricher.complete", **counts)
     return counts

@@ -1,70 +1,79 @@
 """
 Summarization service. Takes raw scraped items and produces a digest-ready
-summary using Groq. Batches everything into ONE API call instead of
-one-per-item — cheaper and faster.
+summary using LangChain ChatGroq.
 """
-import json
 from typing import List
-from groq import Groq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
 
-from backend.config import config
-from backend.utils.logger import log
+from config import config
+from utils.logger import log
 
-SYSTEM_PROMPT = """You are summarizing today's trending GitHub repositories for a \
-developer's daily email digest. Be concise, practical, and skip hype language.
 
-For each repo, write:
-- A one-line summary of what it does (in plain language, not marketing-speak)
-- Why a developer might care (one short clause)
+class SummarizedRepo(BaseModel):
+    title: str = Field(description="owner/repo")
+    summary: str = Field(description="one-line summary of what it does in plain language")
+    why_it_matters: str = Field(description="short clause on why a developer might care")
 
-Respond ONLY with valid JSON, no markdown fences, no preamble. Format:
-[
-  {"title": "owner/repo", "summary": "...", "why_it_matters": "..."}
-]
-"""
+
+class SummariesList(BaseModel):
+    items: List[SummarizedRepo]
+
+
+_SUMMARIZE_PROMPT = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        "You are summarizing today's trending GitHub repositories for a developer's daily email digest. "
+        "Be concise, practical, and skip hype language.",
+    ),
+    ("human", "{repo_list}"),
+])
 
 
 def summarize_items(items: List) -> List[dict]:
     """
-    items: list of sqlite3.Row objects (from storage.db) with title, url,
-    description, metadata columns.
+    items: list of items with title, url, description metadata.
     Returns a list of dicts ready for the email template.
     """
     if not items:
         return []
 
-    client = Groq(api_key=config.GROQ_API_KEY)
-
     repo_list = "\n".join(
-        f"- {row['title']}: {row['description'] or 'No description provided'}"
+        f"- {row.get('title') if isinstance(row, dict) else row.title}: "
+        f"{(row.get('description') if isinstance(row, dict) else row.description) or 'No description provided'}"
         for row in items
     )
 
-    log.info("summarizing", count=len(items))
+    log.info("summarizing.start", count=len(items))
 
-    response = client.chat.completions.create(
+    llm = ChatGroq(
         model="llama-3.3-70b-versatile",
+        api_key=config.GROQ_API_KEY,
+        temperature=0.2,
         max_tokens=2000,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": repo_list},
-        ],
     )
-
-    raw_text = response.choices[0].message.content.strip()
+    chain = _SUMMARIZE_PROMPT | llm.with_structured_output(SummariesList)
 
     try:
-        summaries = json.loads(raw_text)
-    except json.JSONDecodeError:
-        log.error("summary_parse_failed", raw=raw_text[:500])
-        # Fallback: return items without AI summary rather than failing the whole digest
+        result = chain.invoke({"repo_list": repo_list})
+        summaries = [item.model_dump() for item in result.items]
+    except Exception as e:
+        log.error("summary_chain_failed", error=str(e))
         summaries = [
-            {"title": row["title"], "summary": row["description"] or "", "why_it_matters": ""}
+            {
+                "title": row.get("title") if isinstance(row, dict) else row.title,
+                "summary": (row.get("description") if isinstance(row, dict) else row.description) or "",
+                "why_it_matters": "",
+            }
             for row in items
         ]
 
-    # Merge URL back in (LLM doesn't need to handle URLs, reduces hallucination risk)
-    url_map = {row["title"]: row["url"] for row in items}
+    # Merge URL back in
+    url_map = {
+        (row.get("title") if isinstance(row, dict) else row.title): (row.get("url") if isinstance(row, dict) else row.url)
+        for row in items
+    }
     for s in summaries:
         s["url"] = url_map.get(s["title"], "")
 

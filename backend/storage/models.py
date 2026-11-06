@@ -158,3 +158,24 @@ class UserEmbedding(Base):
     created_at      = Column(DateTime, default=datetime.now)
 
     user = relationship("UserProfile", backref="embeddings")
+
+class LLMUsageLog(Base):
+    __tablename__ = "llm_usage_log"
+
+    id = Column(Integer, primary_key=True)
+    provider = Column(String, nullable=False)          # "groq" | "gemini"
+    model = Column(String, nullable=False)              # "llama-3.3-70b-versatile"
+    operation = Column(String, nullable=False)          # "enrichment" | "digest_generation" | "embedding"
+
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+
+    latency_ms = Column(Integer, nullable=True)
+    status = Column(String, default="success")          # "success" | "failed"
+    error_message = Column(String, nullable=True)
+
+    content_item_id = Column(Integer, nullable=True)     # link back if enrichment
+    user_id = Column(Integer, nullable=True)             # link back if digest/embedding
+
+    created_at = Column(DateTime, default=datetime.now)

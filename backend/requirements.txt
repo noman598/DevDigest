@@ -2,8 +2,6 @@ requests==2.32.3
 beautifulsoup4==4.12.3
 tenacity==9.0.0
 python-dotenv==1.0.1
-# anthropic==0.39.0
-# APScheduler==3.10.4
 resend==2.4.0
 structlog==24.4.0
 pydantic_settings
@@ -13,7 +11,14 @@ groq
 streamlit
 pgvector
 instructor
-# cohere
 brevo-python
 google-genai
 fastapi
+uvicorn
+httpx
+python-dateutil
+langchain
+langgraph
+langchain-core
+langchain-groq
+langchain-google-genai

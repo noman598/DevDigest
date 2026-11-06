@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
 
     # Email
+    BREVO_API_KEY: str = ""
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = ""
     EMAIL_TO: str = ""
@@ -23,20 +24,12 @@ class Settings(BaseSettings):
     GITHUB_TRENDING_SINCE: str = "daily"
     USER_AGENT: str = "GitHubDigestBot/1.0 (personal project)"
 
-    # Load environment from .env file
-    model_config = SettingsConfigDict(env_file=".env")
+    # Load environment from .env file, ignoring extra legacy vars
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    def validate_required(self):  # was: def validate(self)
+    def validate_required(self):
         """Call this at startup to fail fast if required config is missing."""
         missing = []
-        # if not self.ANTHROPIC_API_KEY:
-        #     missing.append("ANTHROPIC_API_KEY")
-        # if not self.RESEND_API_KEY:
-        #     missing.append("RESEND_API_KEY")
-        # if not self.EMAIL_FROM:
-        #     missing.append("EMAIL_FROM")
-        # if not self.EMAIL_TO:
-        #     missing.append("EMAIL_TO")
         if missing:
             raise EnvironmentError(
                 f"Missing required environment variables: {', '.join(missing)}. "

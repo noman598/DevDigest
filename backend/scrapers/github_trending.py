@@ -3,7 +3,8 @@ Scrapes github.com/trending. Static server-rendered HTML, no JS execution needed
 Respects a custom User-Agent and has retry logic since trending page layout
 or availability can occasionally hiccup.
 """
-import requests
+# import requests
+import httpx
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import List
@@ -33,17 +34,18 @@ class GitHubTrendingScraper(BaseScraper):
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True,
     )
-    def _fetch_html(self, url: str) -> str:
+    async def _fetch_html(self, url: str) -> str:
         headers = {"User-Agent": config.USER_AGENT}
-        resp = requests.get(url, headers=headers, timeout=15)
+        # resp = requests.get(url, headers=headers, timeout=15)
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(url, headers=headers)
         resp.raise_for_status()
         return resp.text
 
-    def fetch(self) -> List[RawItem]:
+    async def fetch(self) -> List[RawItem]:
         url = self._build_url()
         log.info("scraping", source=self.source_name, url=url)
-
-        html = self._fetch_html(url)
+        html = await self._fetch_html(url)
         soup = BeautifulSoup(html, "html.parser")
 
         items: List[RawItem] = []

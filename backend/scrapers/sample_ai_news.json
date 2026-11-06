@@ -1,0 +1,58 @@
+[
+  {
+    "source": "openai_news",
+    "title": "OpenAI to acquire Pierre Computer Company, Inc.",
+    "url": "https://openai.com/index/openai-to-acquire-pierre",
+    "description": "OpenAI will acquire Pierre Computer Company, expanding Codex’s tools for building, understanding, and reviewing code.",
+    "metadata": {
+      "published_at": "2026-11-04T14:30:00+00:00",
+      "categories": [
+        "Company"
+      ],
+      "guid": "https://openai.com/index/openai-to-acquire-pierre",
+      "feed_url": "https://openai.com/news/rss.xml"
+    }
+  },
+  {
+    "source": "openai_news",
+    "title": "Daybreak Red is now available in AWS GovCloud (US-East)",
+    "url": "https://openai.com/index/daybreak-red-aws-govcloud",
+    "description": "Daybreak Red brings GPT-5.6 Cyber to approved customers in AWS GovCloud (US-East) through Amazon Bedrock for authorized cybersecurity work.",
+    "metadata": {
+      "published_at": "2026-11-04T07:00:00+00:00",
+      "categories": [
+        "Product"
+      ],
+      "guid": "https://openai.com/index/daybreak-red-aws-govcloud",
+      "feed_url": "https://openai.com/news/rss.xml"
+    }
+  },
+  {
+    "source": "anthropic_research",
+    "title": "Progress on provable inference for large language models",
+    "url": "https://www.anthropic.com/research/provable-inference",
+    "description": "We have made progress on a type of cryptographic proof known as a “zkSNARK.” In this post, we share some of that progress, primarily through a system we call FlashProve.",
+    "metadata": {
+      "published_at": "2026-11-02T00:00:00+00:00",
+      "categories": [
+        "Research"
+      ],
+      "guid": "https://www.anthropic.com/research/provable-inference",
+      "feed_url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml"
+    }
+  },
+  {
+    "source": "anthropic_news",
+    "title": "AI for Science expands to foundations and research institutions",
+    "url": "https://www.anthropic.com/news/ai-for-science-expands-foundations-research-institutions",
+    "description": "We’re highlighting 20 scientific foundations, institutions, and research groups around the world that we’ve partnered with in an expansion of our AI for Science program.",
+    "metadata": {
+      "published_at": "2026-10-28T00:00:00+00:00",
+      "categories": [
+        "News"
+      ],
+      "guid": "https://www.anthropic.com/news/ai-for-science-expands-foundations-research-institutions",
+      "feed_url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml"
+    }
+  }
+]

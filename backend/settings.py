@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # Email
     BREVO_API_KEY: str = ""
+    RESEND_API_KEY: str = ""
     EMAIL_FROM: str = ""
     EMAIL_TO: str = ""
     GROQ_API_KEY: str = ""
@@ -24,10 +25,10 @@ class Settings(BaseSettings):
     GITHUB_TRENDING_SINCE: str = "daily"
     USER_AGENT: str = "GitHubDigestBot/1.0 (personal project)"
 
-    # Load environment from .env file
-    model_config = SettingsConfigDict(env_file=".env")
+    # Load environment from .env file, ignoring extra legacy vars
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    def validate_required(self):  # was: def validate(self)
+    def validate_required(self):
         """Call this at startup to fail fast if required config is missing."""
         missing = []
         # if not self.ANTHROPIC_API_KEY:

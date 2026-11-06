@@ -1,19 +1,28 @@
 """
 Embeds user profiles into vectors for personalization matching.
-Mirrors services/embedder.py's pattern — reuses the same Cohere embedding call.
+Uses LangChain Google GenAI Embeddings pinned to 1536 dimensions.
 """
 from datetime import datetime
 
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+from config import config
 from storage.db import SessionLocal as get_session
 from storage.models import UserProfile, UserEmbedding
 from utils.logger import log
-# import cohere
-from config import config
-from google import genai
-from google.genai.types import EmbedContentConfig
+
+
+def _get_embedder() -> GoogleGenerativeAIEmbeddings:
+    return GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001",
+        google_api_key=config.GEMINI_API_KEY,
+        output_dimensionality=1536,
+        task_type="retrieval_query",
+    )
+
 
 def _build_profile_text(user: UserProfile) -> str:
-    """Flatten preferences into one text block — same idea as _build_embedding_text for content."""
+    """Flatten preferences into one text block."""
     parts = [
         f"Interested in: {', '.join(user.liked_tags or [])}",
         f"Not interested in: {', '.join(user.disliked_tags or [])}",
@@ -22,45 +31,10 @@ def _build_profile_text(user: UserProfile) -> str:
     ]
     return "\n".join(p for p in parts if p)
 
-def _get_embedding(text: str):
-    # co = cohere.ClientV2(api_key=config.COHERE_API_KEY)
-
-    # text_inputs = [
-    #     {
-    #         "content": [
-    #             {"type": "text", "text": "hello"},
-    #             {"type": "text", "text": "goodbye"}
-    #         ]
-    #     },
-    # ]
-
-    # response = co.embed(
-    #     texts=[text],
-    #     model="embed-v4.0",
-    #     input_type="search_document",
-    #     embedding_types=["float"],
-    # )
-    # print(response)
-    # return response.embeddings.float[0]
-
-
-    client = genai.Client(api_key=config.GEMINI_API_KEY)
-
-    result = client.models.embed_content(
-            model="gemini-embedding-001",
-            contents=text,
-            config=EmbedContentConfig(
-        task_type="RETRIEVAL_DOCUMENT",   # or RETRIEVAL_QUERY for user profile side
-        output_dimensionality=1536,       # explicitly pin it — don't rely on the 3072 default
-    ),
-    )
-
-    print(result.embeddings)
-    vector = result.embeddings[0].values   # <-- extract the actual float list
-    return vector
 
 def run_user_embedding(batch_size: int = 50) -> dict[str, int]:
     counts = {"processed": 0, "succeeded": 0, "failed": 0}
+    embedder = _get_embedder()
 
     with get_session() as session:
         pending = (
@@ -80,14 +54,16 @@ def run_user_embedding(batch_size: int = 50) -> dict[str, int]:
             counts["processed"] += 1
             try:
                 text = _build_profile_text(user)
-                vector = _get_embedding(text)
+                vector = embedder.embed_query(text)
 
-                session.add(UserEmbedding(
-                    user_id         = user.id,
-                    embedding       = vector,
-                    embedding_model = 'Cohere',
-                    embedded_text   = text,
-                ))
+                session.add(
+                    UserEmbedding(
+                        user_id=user.id,
+                        embedding=vector,
+                        embedding_model="Google-GenAI-LangChain",
+                        embedded_text=text,
+                    )
+                )
                 user.embedding_status = "embedded"
                 session.commit()
                 counts["succeeded"] += 1
