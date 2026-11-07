@@ -267,3 +267,7 @@ async def run_digest_pipeline_graph(top_n: int = 5) -> dict[str, int]:
 
     log.info("graph.digest.run_complete", **counts)
     return counts
+
+
+if __name__ == "__main__":
+    asyncio.run(run_digest_pipeline_graph())

@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     COHERE_API_KEY: str = ''
     GEMINI_API_KEY: str = ''
 
+    # LangSmith Observability & Tracing
+    LANGSMITH_TRACING: bool = True
+    LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGSMITH_API_KEY: str = ""
+    LANGSMITH_PROJECT: str = "devsnack-news"
+
     # Scraper
     GITHUB_TRENDING_LANGUAGE: str = ""
     GITHUB_TRENDING_SINCE: str = "daily"
@@ -46,5 +52,19 @@ class Settings(BaseSettings):
             )
 
 
+import os
+
 # Singleton instance for easy imports
 settings = Settings()
+
+# Automatically configure LangSmith environment variables for LangChain / LangGraph tracing
+if settings.LANGSMITH_API_KEY:
+    tracing_enabled = "true" if settings.LANGSMITH_TRACING else "false"
+    os.environ["LANGSMITH_TRACING"] = tracing_enabled
+    os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
+    os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
+    os.environ["LANGSMITH_ENDPOINT"] = settings.LANGSMITH_ENDPOINT
+    # Compatibility with LANGCHAIN_ env keys
+    os.environ["LANGCHAIN_TRACING_V2"] = tracing_enabled
+    os.environ["LANGCHAIN_API_KEY"] = settings.LANGSMITH_API_KEY
+    os.environ["LANGCHAIN_PROJECT"] = settings.LANGSMITH_PROJECT

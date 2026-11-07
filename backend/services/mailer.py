@@ -106,6 +106,20 @@ def build_digest_html(user_name: str, digest: dict, ranked_items: list) -> str:
         url        = item["url"] if not hasattr(item, "url") else item.url
         summary    = item["summary"] if not hasattr(item, "summary") else item.summary
         tech_stack = item["tech_stack"] if not hasattr(item, "tech_stack") else item.tech_stack
+        raw_data   = item["raw_data"] if isinstance(item, dict) and "raw_data" in item else getattr(item, "raw_data", {})
+        meta       = (raw_data or {}).get("metadata", {})
+        source     = (raw_data or {}).get("source", "")
+
+        hn_badge = ""
+        if source == "hacker_news" or meta.get("hn_url"):
+            pts = meta.get("score", 0)
+            comms = meta.get("comments_count", 0)
+            hn_url = meta.get("hn_url") or f"https://news.ycombinator.com/item?id={meta.get('id', '')}"
+            hn_badge = (
+                f'<a href="{hn_url}" target="_blank" style="display:inline-block;background:#ff6600;color:#ffffff;'
+                f'font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;'
+                f'margin-right:6px;text-decoration:none;">🟠 HN {pts} pts · {comms} comms</a>'
+            )
 
         tech_badges = "".join(
             f'<span style="display:inline-block;background:#eef4fc;color:#185fa5;'
@@ -113,6 +127,7 @@ def build_digest_html(user_name: str, digest: dict, ranked_items: list) -> str:
             f'margin-right:6px;">{t}</span>'
             for t in (tech_stack or [])[:3]
         )
+        all_badges = hn_badge + tech_badges
 
         items_html += f"""
         <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:10px;
@@ -120,7 +135,7 @@ def build_digest_html(user_name: str, digest: dict, ranked_items: list) -> str:
             <a href="{url}" style="font-size:16px;font-weight:700;color:#111;
                text-decoration:none;line-height:1.4;">{title}</a>
 
-            <div style="margin:8px 0 10px;">{tech_badges}</div>
+            <div style="margin:8px 0 10px;">{all_badges}</div>
 
             <p style="margin:0 0 10px;color:#444;font-size:14px;line-height:1.6;">
                 {summary}
@@ -168,7 +183,7 @@ def send_digest_email(to_email: str, subject: str, html_content: str) -> bool:
             html_content=html_content,
             sender=SENDER,
             subject=subject,
-            to=[SendTransacEmailRequestToItem(email='isoisoiso598@gmail.com')],
+            to=[SendTransacEmailRequestToItem(email=to_email)],
         )
         log.info("mailer.email_sent", to=to_email)
         return True

@@ -14,6 +14,7 @@ from pipelines.db_helpers import (
     start_ingestion_run,
 )
 from scrapers.github_trending import GitHubTrendingScraper
+from scrapers.hn_scraper import HackerNewsScraper
 from scrapers.rss_scraper import AINewsAggregatorScraper, OpenAINewsScraper, AnthropicNewsScraper
 from services.embedder import run_embedding
 from services.enricher import run_enrichment
@@ -58,8 +59,10 @@ async def scrape_node(state: ContentIngestionState) -> dict:
         scrapers.append(AnthropicNewsScraper(max_age_hours=24.0))
     elif source_name in ("ai_news_rss", "rss", "ai_news"):
         scrapers.append(AINewsAggregatorScraper(max_age_hours=24.0))
+    elif source_name in ("hacker_news", "hn"):
+        scrapers.append(HackerNewsScraper(max_age_hours=24.0, min_score=25, limit=25))
     elif source_name == "all":
-        # Scrapes both GitHub Trending AND all AI Lab news (OpenAI, Anthropic) in parallel
+        # Scrapes GitHub Trending, AI Lab news (OpenAI, Anthropic), and Hacker News in parallel
         scrapers.append(
             GitHubTrendingScraper(
                 language=getattr(config, "GITHUB_TRENDING_LANGUAGE", ""),
@@ -67,8 +70,9 @@ async def scrape_node(state: ContentIngestionState) -> dict:
             )
         )
         scrapers.append(AINewsAggregatorScraper(max_age_hours=24.0))
+        scrapers.append(HackerNewsScraper(max_age_hours=24.0, min_score=25, limit=25))
     else:
-        scrapers.append(GitHubTrendingScraper())
+        scrapers.append(HackerNewsScraper(max_age_hours=24.0, min_score=25, limit=25))
 
     tasks = [scraper.fetch() for scraper in scrapers]
     results = await asyncio.gather(*tasks, return_exceptions=True)

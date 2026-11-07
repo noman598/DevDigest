@@ -1,7 +1,9 @@
+# backend/services/enricher.py
 from datetime import datetime
 from typing import Literal, Optional
 import asyncio
 
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
@@ -10,33 +12,41 @@ from config import config
 from services.llm import BudgetUsageCallback, is_within_budget
 from storage.db import SessionLocal as get_session
 from storage.models import ContentEnrichment, ContentItem, PipelineStatus
+from tools.hn_tools import fetch_hn_discussion, search_hn_discussions
 from utils.logger import log
 
 ENRICHMENT_MODEL = "qwen/qwen3.8-27b"
 
+# Tools available to the Enrichment Agent
+AVAILABLE_TOOLS = [fetch_hn_discussion, search_hn_discussions]
+TOOL_MAP = {t.name: t for t in AVAILABLE_TOOLS}
+
 
 class EnrichmentResult(BaseModel):
     title: str = Field(description="clean readable repository or article title")
-    summary: str = Field(description="2-3 sentence summary of what this does, who it's for, and why it matters")
+    summary: str = Field(
+        description="2-3 sentence summary of what this does, who it's for, why it matters, and developer sentiment if available"
+    )
     tech_stack: list[str] = Field(default=[], description="specific technologies/frameworks used or mentioned")
-    topics: list[str] = Field(default=[], description="broad topic categories (e.g. AI/ML, DevOps, LLMs)")
+    topics: list[str] = Field(default=[], description="broad topic categories (e.g. AI/ML, DevOps, Systems, LLMs)")
     use_case: Literal["library", "tool", "tutorial", "research", "framework", "dataset", "announcement", "other"] = Field(
         description="primary classification of the content"
     )
 
 
-# LangChain Prompt Template
-_ENRICHMENT_PROMPT = ChatPromptTemplate.from_messages([
+# Structured output synthesis prompt
+_STRUCTURED_PROMPT = ChatPromptTemplate.from_messages([
     (
         "system",
-        "You are an expert technical content analyst. Analyze the following developer content "
-        "and extract accurate, structured metadata.",
+        "You are an expert technical content analyst. Analyze the following developer content and any "
+        "tool research findings (such as Hacker News community sentiment and developer reactions). "
+        "Extract accurate, structured metadata and synthesize a concise, high-signal summary.",
     ),
-    ("human", "Content item to analyze:\n\n{content_text}"),
+    ("human", "Developer item to analyze:\n\n{content_text}"),
 ])
 
 
-def _get_llm(content_item_id: Optional[str] = None):
+def _get_base_llm(content_item_id: Optional[str] = None):
     callbacks = [
         BudgetUsageCallback(
             operation="enrichment",
@@ -44,18 +54,17 @@ def _get_llm(content_item_id: Optional[str] = None):
             content_item_id=content_item_id,
         )
     ]
-    llm = ChatGroq(
+    return ChatGroq(
         model=ENRICHMENT_MODEL,
         api_key=config.GROQ_API_KEY,
         temperature=0.1,
         max_tokens=1024,
         callbacks=callbacks,
     )
-    return _ENRICHMENT_PROMPT | llm.with_structured_output(EnrichmentResult)
 
 
 def _build_content_text(raw: dict) -> str:
-    """Formats raw item data whether it is from GitHub or an RSS/News source."""
+    """Formats raw item data whether it is from GitHub, Hacker News, or an RSS source."""
     source = raw.get("source", "")
     title = raw.get("title", "")
     desc = raw.get("description") or "N/A"
@@ -67,6 +76,19 @@ def _build_content_text(raw: dict) -> str:
         f"Description: {desc}",
     ]
 
+    # Hacker News metadata
+    if "score" in meta:
+        lines.append(f"HN Score: {meta.get('score')} points")
+    if "comments_count" in meta:
+        lines.append(f"HN Comments count: {meta.get('comments_count')}")
+    if "by" in meta:
+        lines.append(f"Author: @{meta.get('by')}")
+    if "id" in meta:
+        lines.append(f"HN Story ID: {meta.get('id')}")
+    if "hn_url" in meta:
+        lines.append(f"HN Discussion URL: {meta.get('hn_url')}")
+
+    # GitHub / RSS metadata
     if "language" in meta:
         lines.append(f"Language: {meta.get('language')}")
     if "total_stars" in meta:
@@ -82,15 +104,73 @@ def _build_content_text(raw: dict) -> str:
 
 
 async def enrich_content_item(item: ContentItem) -> EnrichmentResult:
-    """Enriches a single content item using LangChain ChatGroq."""
-    chain = _get_llm(content_item_id=str(item.id))
+    """
+    Enriches a single content item using an Agent with Tool Calling.
+    If the item is a Hacker News discussion, the agent calls fetch_hn_discussion
+    to inspect real developer opinions, debates, and warnings before finalizing.
+    """
+    base_llm = _get_base_llm(content_item_id=str(item.id))
     content_text = _build_content_text(item.raw_data or {})
-    return await chain.ainvoke({"content_text": content_text})
+    source = (item.raw_data or {}).get("source", "")
+    meta = (item.raw_data or {}).get("metadata", {})
+
+    # If item is from Hacker News, engage tool-calling agent
+    is_hn = source == "hacker_news" or "id" in meta or "hn_url" in meta
+    comments_count = meta.get("comments_count", 0)
+
+    if is_hn and comments_count > 0:
+        llm_with_tools = base_llm.bind_tools(AVAILABLE_TOOLS)
+
+        agent_prompt = [
+            SystemMessage(
+                content=(
+                    "You are an expert technical intelligence agent. Your job is to analyze developer news "
+                    "and extract ground-truth technical insights. "
+                    "For Hacker News items, you have the 'fetch_hn_discussion' tool. Use it to inspect "
+                    "what the developer community thinks, including performance trade-offs, caveats, and practical feedback. "
+                    "You also have 'search_hn_discussions' if you need context on past discussions about a tool."
+                )
+            ),
+            HumanMessage(content=f"Item to analyze:\n\n{content_text}"),
+        ]
+
+        try:
+            # 1. Agent decides whether to call tools
+            agent_msg = await llm_with_tools.ainvoke(agent_prompt)
+
+            tool_messages: list[ToolMessage] = []
+            if agent_msg.tool_calls:
+                for tc in agent_msg.tool_calls:
+                    tool_name = tc.get("name")
+                    tool_args = tc.get("args", {})
+                    log.info("enricher.agent_invoking_tool", tool=tool_name, args=tool_args, item=item.external_id)
+
+                    tool_fn = TOOL_MAP.get(tool_name)
+                    if tool_fn:
+                        tool_res = await tool_fn.ainvoke(tool_args)
+                        tool_messages.append(ToolMessage(content=str(tool_res), tool_call_id=tc["id"]))
+
+            # 2. Synthesize with structured output schema
+            structured_chain = base_llm.with_structured_output(EnrichmentResult)
+
+            if tool_messages:
+                full_conversation = agent_prompt + [agent_msg] + tool_messages
+                full_conversation.append(
+                    HumanMessage(content="Synthesize the analysis and tool findings into the required structured schema.")
+                )
+                return await structured_chain.ainvoke(full_conversation)
+
+        except Exception as e:
+            log.warning("enricher.tool_agent_failed_falling_back", error=str(e), item=item.external_id)
+
+    # Standard / fallback direct structured extraction
+    direct_chain = _STRUCTURED_PROMPT | base_llm.with_structured_output(EnrichmentResult)
+    return await direct_chain.ainvoke({"content_text": content_text})
 
 
 async def run_enrichment(batch_size: int = 50) -> dict[str, int]:
     """
-    Processes one batch of scraped items using LangChain.
+    Processes one batch of scraped items using LangChain Agent with tool calling.
     Commits per item so a failure doesn't roll back the whole batch.
     """
     counts = {"processed": 0, "succeeded": 0, "failed": 0}
@@ -148,7 +228,7 @@ async def run_enrichment(batch_size: int = 50) -> dict[str, int]:
             item.pipeline_status = PipelineStatus.ENRICHED
             session.commit()
             counts["succeeded"] += 1
-            log.info("enricher.item_done", external_id=item.external_id)
+            log.info("enricher.item_done", external_id=item.external_id, title=res.title[:50])
 
     log.info("enricher.complete", **counts)
     return counts
