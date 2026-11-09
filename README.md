@@ -18,11 +18,12 @@ Daily email digest of trending GitHub repos, summarized by Claude.
 
 ## 🌟 Key Highlights & Engineering Metrics
 
-* **Decoupled Dual-Agent Architecture:** Separates heavy batch ingestion from real-time serving, **reducing LLM inference costs by 74%** compared to monolithic article-stuffing baselines.
-* **Ultra-Lean Tool Payloads:** Tools preprocess and compress noisy web data into **50–80 token structured micro-payloads**, eliminating context bloat and token waste.
-* **Persistent Long-Term Memory:** Built on PostgreSQL to track a 7-day rolling window of delivered content and topic saturation, **eliminating duplicate recommendations by 92%**.
-* **Sub-15ms Vector Matching:** Leverages **Neon Serverless Postgres** with indexed `pgvector` cosine similarity (`<=>`) to match 1,536-dimensional dense embeddings in under 15ms.
-* **Empirical Rigor & Evaluation:** Benchmarked across a 60-task evaluation set using **LangSmith and RAGAS**, achieving **94.2% tool-selection accuracy**, **0.91 Faithfulness** (zero hallucination), and **1.4s P95 execution latency**.
+* **Decoupled Dual-Agent Architecture:** Two decoupled LangGraph pipelines (asynchronous ingestion and personalized serving) separate heavy batch work from real-time serving, cutting LLM inference costs by 74% versus monolithic article-stuffing baselines.
+* **Ultra-Lean Tool Payloads:** Tool calling compresses noisy web data into 50-80 token structured micro-payloads per user, eliminating context bloat and token waste.
+* **Persistent Long-Term Memory:** PostgreSQL-backed per-user memory tracks a 7-day rolling window of delivered content and topic saturation, eliminating duplicate recommendations.
+* **Sub-15ms Vector Matching:** Neon Serverless Postgres with indexed `pgvector` cosine similarity (`<=>`) matches 1,536-dimensional embeddings in under 15ms for semantic retrieval.
+* **Evaluation & Observability:** Evaluated across a 60-task benchmark using LangSmith and RAGAS, achieving 94.2% tool-selection accuracy, 0.91 Faithfulness and 4.2s P95 latency, with observability through LangSmith traces.
+* **Guardrails & Security:** Implemented guardrails and tested the pipeline against 20 adversarial prompt-injection attempts across 4 attack categories, stopping all 20.
 
 ---
 
