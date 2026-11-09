@@ -1,4 +1,4 @@
-# GitHub Trending Digest
+# Developer Intelligence Digest
 # StackPulse ⚡
 ### Autonomous Developer Intelligence & Security Radar
 
