@@ -1,0 +1,220 @@
+<form id="onboarding-form" 
+      hx-post="/api/save-profile" 
+      hx-target="#form-response" 
+      hx-swap="innerHTML"
+      hx-indicator="#submit-spinner"
+      class="space-y-6">
+
+    {% if message %}
+        <div class="p-3.5 rounded-xl bg-purple-50 border-2 border-brand-purple/30 text-purple-900 text-xs font-semibold flex items-center justify-between">
+            <span class="flex items-center gap-2">
+                <span>ℹ️</span>
+                <span>{{ message }}</span>
+            </span>
+            <span class="text-[10px] uppercase tracking-wider font-bold text-brand-purple">Loaded</span>
+        </div>
+    {% endif %}
+
+    <!-- 1. Identity & Email Lookup -->
+    <div class="space-y-3">
+        <div class="flex items-center justify-between">
+            <h4 class="text-sm font-extrabold text-black uppercase tracking-wider flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-brand-purple text-white text-xs flex items-center justify-center font-bold">1</span>
+                <span>Where should we send your briefing?</span>
+            </h4>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Email Address *</label>
+                <div class="flex gap-2">
+                    <input type="email" 
+                           id="subscriber-email"
+                           name="email" 
+                           required 
+                           value="{{ profile.email or '' }}"
+                           placeholder="you@domain.com"
+                           class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-sm text-black placeholder-zinc-400 focus:outline-none transition-all">
+                    <button type="button"
+                            hx-post="/api/lookup-profile"
+                            hx-include="#subscriber-email"
+                            hx-target="#form-container"
+                            hx-swap="innerHTML"
+                            class="neo-btn bg-white hover:bg-beige-100 px-3.5 py-2 text-xs font-bold text-black flex-shrink-0"
+                            title="Load existing preferences">
+                        Load
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Your Name (Optional)</label>
+                <input type="text" 
+                       name="name" 
+                       value="{{ profile.name or '' }}"
+                       placeholder="e.g. Alex"
+                       class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-sm text-black placeholder-zinc-400 focus:outline-none transition-all">
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Source Selection -->
+    <div class="space-y-3 pt-3 border-t-2 border-black/5">
+        <h4 class="text-sm font-extrabold text-black uppercase tracking-wider flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-brand-purple text-white text-xs flex items-center justify-center font-bold">2</span>
+            <span>Choose Your News Sources</span>
+        </h4>
+        <p class="text-xs text-zinc-500">Select which platforms you'd like us to monitor daily.</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {% set active_sources = profile.selected_sources or ["github_trending", "openai_news", "anthropic_news", "hacker_news"] %}
+            
+            <label class="flex items-start gap-3 p-3 rounded-xl bg-beige-50 border-2 border-black/10 hover:border-black/30 cursor-pointer transition-all">
+                <input type="checkbox" name="selected_sources" value="github_trending" {% if "github_trending" in active_sources %}checked{% endif %} class="mt-1 rounded accent-brand-purple w-4 h-4">
+                <div>
+                    <div class="text-xs font-bold text-black flex items-center gap-1.5">
+                        <span>🐙 GitHub Trending</span>
+                    </div>
+                    <div class="text-[11px] text-zinc-500">Popular developer repositories & tools</div>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-xl bg-beige-50 border-2 border-black/10 hover:border-black/30 cursor-pointer transition-all">
+                <input type="checkbox" name="selected_sources" value="openai_news" {% if "openai_news" in active_sources %}checked{% endif %} class="mt-1 rounded accent-brand-purple w-4 h-4">
+                <div>
+                    <div class="text-xs font-bold text-black flex items-center gap-1.5">
+                        <span>🟢 OpenAI Official News</span>
+                    </div>
+                    <div class="text-[11px] text-zinc-500">Models, research & case studies</div>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-xl bg-beige-50 border-2 border-black/10 hover:border-black/30 cursor-pointer transition-all">
+                <input type="checkbox" name="selected_sources" value="anthropic_news" {% if "anthropic_news" in active_sources %}checked{% endif %} class="mt-1 rounded accent-brand-purple w-4 h-4">
+                <div>
+                    <div class="text-xs font-bold text-black flex items-center gap-1.5">
+                        <span>🟤 Anthropic Announcements</span>
+                    </div>
+                    <div class="text-[11px] text-zinc-500">Claude updates & system insights</div>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-xl bg-beige-50 border-2 border-black/10 hover:border-black/30 cursor-pointer transition-all">
+                <input type="checkbox" name="selected_sources" value="hacker_news" {% if "hacker_news" in active_sources %}checked{% endif %} class="mt-1 rounded accent-brand-purple w-4 h-4">
+                <div>
+                    <div class="text-xs font-bold text-black flex items-center gap-1.5">
+                        <span>🟠 Hacker News Discussions</span>
+                    </div>
+                    <div class="text-[11px] text-zinc-500">Top engineering stories & discussions</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- 3. Topics & Stack -->
+    <div class="space-y-3 pt-3 border-t-2 border-black/5">
+        <h4 class="text-sm font-extrabold text-black uppercase tracking-wider flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-brand-purple text-white text-xs flex items-center justify-center font-bold">3</span>
+            <span>Your Tech Stack & Interests</span>
+        </h4>
+
+        <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-2">Pick what you want more of (Click to select):</label>
+            {% set all_topics = ["Python", "AI/ML", "LLMs", "System Design", "Web Development", "FastAPI", "DevOps/Cloud", "Databases", "Rust", "Go", "Cybersecurity", "Open Source", "Kubernetes", "Data Science"] %}
+            {% set user_liked = profile.liked_tags or ["Python", "AI/ML", "LLMs", "System Design"] %}
+            
+            <div class="flex flex-wrap gap-2">
+                {% for topic in all_topics %}
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="liked_tags" value="{{ topic }}" {% if topic in user_liked %}checked{% endif %} class="hidden peer">
+                        <span class="inline-block px-3 py-1.5 rounded-xl text-xs font-bold bg-white border-2 border-black/15 text-zinc-700 peer-checked:bg-brand-purple peer-checked:border-black peer-checked:text-white hover:border-black/40 transition-all select-none shadow-sm peer-checked:shadow-neo-sm">
+                            {{ topic }}
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Anything specific you're curious about?</label>
+                <input type="text" 
+                       name="custom_interests" 
+                       value="{{ profile.custom_interests or '' }}"
+                       placeholder="e.g. local LLMs on Mac, RAG pipelines, Postgres"
+                       class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-xs text-black placeholder-zinc-400 focus:outline-none transition-all">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Keyword Alerts (Optional)</label>
+                <input type="text" 
+                       name="keyword_alerts" 
+                       value="{{ profile.keyword_alerts or '' }}"
+                       placeholder="e.g. langchain, vllm, CVE, zero-day"
+                       class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-xs text-black placeholder-zinc-400 focus:outline-none transition-all">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1.5">Topics / Tools to Exclude (Optional)</label>
+            <input type="text" 
+                   name="disliked_tags_csv" 
+                   value="{{ (profile.disliked_tags or []) | join(', ') }}"
+                   placeholder="e.g. crypto, web3, php, wordpress (comma-separated)"
+                   class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-xs text-black placeholder-zinc-400 focus:outline-none transition-all">
+        </div>
+    </div>
+
+    <!-- 4. Schedule & Options -->
+    <div class="space-y-3 pt-3 border-t-2 border-black/5">
+        <h4 class="text-sm font-extrabold text-black uppercase tracking-wider flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-brand-purple text-white text-xs flex items-center justify-center font-bold">4</span>
+            <span>Delivery Schedule</span>
+        </h4>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Frequency</label>
+                <select name="frequency" class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-xs text-black font-semibold focus:outline-none">
+                    <option value="daily" {% if profile.frequency == 'daily' %}selected{% endif %}>Daily (Monday – Sunday)</option>
+                    <option value="weekdays" {% if profile.frequency == 'weekdays' %}selected{% endif %}>Weekdays Only (Mon – Fri)</option>
+                    <option value="weekly" {% if profile.frequency == 'weekly' %}selected{% endif %}>Weekly Summary (Monday)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-zinc-700 mb-1.5">Preferred Time</label>
+                <select name="delivery_time" class="w-full bg-white border-2 border-black/20 focus:border-black rounded-xl px-3.5 py-2.5 text-xs text-black font-semibold focus:outline-none">
+                    <option value="06:00" {% if profile.delivery_time == '06:00' %}selected{% endif %}>06:00 AM</option>
+                    <option value="07:00" {% if profile.delivery_time == '07:00' %}selected{% endif %}>07:00 AM</option>
+                    <option value="08:00" {% if profile.delivery_time == '08:00' or not profile.delivery_time %}selected{% endif %}>08:00 AM (Recommended)</option>
+                    <option value="09:00" {% if profile.delivery_time == '09:00' %}selected{% endif %}>09:00 AM</option>
+                    <option value="12:00" {% if profile.delivery_time == '12:00' %}selected{% endif %}>12:00 PM</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4 pt-1 text-xs font-semibold text-zinc-700">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="include_summary" value="true" checked class="rounded accent-brand-purple w-4 h-4">
+                <span>Brief 2-sentence summaries</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="include_why_matters" value="true" checked class="rounded accent-brand-purple w-4 h-4">
+                <span>"Why it matters" developer notes</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Submit CTA -->
+    <div class="pt-4 border-t-2 border-black/10">
+        <button type="submit" 
+                class="neo-btn w-full py-3.5 px-6 bg-brand-purple hover:bg-brand-purpleHover text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2">
+            <span>⚡ Save Preferences & Activate Daily Briefing</span>
+            <span id="submit-spinner" class="htmx-indicator inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+        </button>
+        <p class="text-center text-xs text-zinc-400 mt-2 font-medium">
+            Zero spam · Unsubscribe anytime with 1 click
+        </p>
+    </div>
+</form>

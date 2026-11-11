@@ -40,8 +40,8 @@ flowchart TD
         Embed --> DB[("Neon PostgreSQL<br/>+ pgvector")]
     end
 
-    subgraph Flow2["Pipeline 2: User Taste & Vector Profiling (Streamlit)"]
-        UI["Streamlit Onboarding Wizard"] --> UserPref["User Profile<br/>(liked_tags, custom_interests, keyword_alerts)"]
+    subgraph Flow2["Pipeline 2: User Taste & Vector Profiling (FastAPI + HTMX)"]
+        UI["FastAPI + HTMX Web Platform"] --> UserPref["User Profile<br/>(liked_tags, custom_interests, keyword_alerts)"]
         UserPref --> UserVec["Gemini vector embedding<br/>(user_embeddings)"]
         UserVec --> DB
     end
@@ -120,7 +120,9 @@ scheduler.py                   -> optional: runs main.py daily, in-process
 │   ├── main.py                     # FastAPI REST server
 │   └── settings.py                 # Pydantic Settings & LangSmith configuration
 ├── frontend/
-│   └── app.py                      # Streamlit 4-step user onboarding & taste wizard
+│   ├── main.py                     # FastAPI server with Jinja2, HTMX & Tailwind CSS
+│   ├── templates/                  # Embage-style dark bento UI & partials
+│   └── storage/                    # User profile persistence & vector embedding
 └── requirements.txt
 ```
 
@@ -176,8 +178,8 @@ flowchart TD
         Embed --> DB[("Neon PostgreSQL<br/>+ pgvector")]
     end
 
-    subgraph Flow2["Pipeline 2: User Taste & Vector Profiling (Streamlit)"]
-        UI["Streamlit Onboarding Wizard"] --> UserPref["User Profile<br/>(liked_tags, custom_interests, keyword_alerts)"]
+    subgraph Flow2["Pipeline 2: User Taste & Vector Profiling (FastAPI + HTMX)"]
+        UI["FastAPI + HTMX Web Platform"] --> UserPref["User Profile<br/>(liked_tags, custom_interests, keyword_alerts)"]
         UserPref --> UserVec["Gemini vector embedding<br/>(user_embeddings)"]
         UserVec --> DB
     end
@@ -250,7 +252,9 @@ flowchart TD
 │   ├── main.py                     # FastAPI REST server
 │   └── settings.py                 # Pydantic Settings & LangSmith configuration
 ├── frontend/
-│   └── app.py                      # Streamlit 4-step user onboarding & taste wizard
+│   ├── main.py                     # FastAPI server with Jinja2, HTMX & Tailwind CSS
+│   ├── templates/                  # Embage-style dark bento UI & partials
+│   └── storage/                    # User profile persistence & vector embedding
 └── requirements.txt
 ```
 
@@ -347,11 +351,12 @@ LANGSMITH_PROJECT=stackpulse
 ## 🚀 Running StackPulse
 
 ### Step 1: Launch the Onboarding Dashboard (Frontend)
-Run the Streamlit wizard to set up your profile, liked topics, custom interests, and keyword alerts:
+Run the FastAPI + HTMX + Tailwind application:
 ```bash
-streamlit run frontend/app.py
+cd frontend
+python -m uvicorn main:app --reload --port 8000
 ```
-Open [http://localhost:8501](http://localhost:8501) in your browser.
+Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ### Step 2: Run Flow 1 (Multi-Source Ingestion & Extraction)
 Scrapes GitHub Trending, Hacker News, and AI Lab feeds, runs the Extraction Agent, and generates vector embeddings:

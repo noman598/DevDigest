@@ -56,14 +56,27 @@ def run_user_embedding(batch_size: int = 50) -> dict[str, int]:
                 text = _build_profile_text(user)
                 vector = embedder.embed_query(text)
 
-                session.add(
-                    UserEmbedding(
-                        user_id=user.id,
-                        embedding=vector,
-                        embedding_model="Google-GenAI-LangChain",
-                        embedded_text=text,
+                existing = (
+                    session.query(UserEmbedding)
+                    .filter(
+                        UserEmbedding.user_id == user.id,
+                        UserEmbedding.embedding_model == "Google-GenAI-LangChain",
                     )
+                    .first()
                 )
+                if existing:
+                    existing.embedding = vector
+                    existing.embedded_text = text
+                    existing.created_at = datetime.now()
+                else:
+                    session.add(
+                        UserEmbedding(
+                            user_id=user.id,
+                            embedding=vector,
+                            embedding_model="Google-GenAI-LangChain",
+                            embedded_text=text,
+                        )
+                    )
                 user.embedding_status = "embedded"
                 session.commit()
                 counts["succeeded"] += 1

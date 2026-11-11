@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-20 sm:space-y-28">
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 1. HERO SECTION (EMBAGE REFERENCE STYLE: SPLIT HERO WITH PREVIEW CARD)    -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="overview" class="pt-8 sm:pt-14 pb-4 max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            
+            <!-- Left Column: Headline, Subtitle, Action Button -->
+            <div class="lg:col-span-7 space-y-6 text-left">
+                
+                <!-- Pill Tag matching Embage style -->
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border-2 border-black text-xs font-bold text-black shadow-neo-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                    <span>GitHub · AI Labs · Security · Hacker News</span>
+                </div>
+
+                <!-- Main Bold Headline with Purple Highlight -->
+                <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-black leading-[1.1]">
+                    Curated developer<br>
+                    <span class="text-brand-purple">intelligence</span> for<br>
+                    your stack.
+                </h1>
+
+                <!-- Clear, Minimalist Subtitle (No Technical Jargon) -->
+                <p class="text-base sm:text-lg text-zinc-600 leading-relaxed max-w-xl">
+                    StackPulse cuts through the noise across GitHub, top AI labs, and developer discussions. One concise morning briefing tailored directly to your engineering interests.
+                </p>
+
+                <!-- Action Neo-Buttons -->
+                <div class="flex flex-wrap items-center gap-4 pt-2">
+                    <a href="#customize" class="neo-btn bg-brand-purple hover:bg-brand-purpleHover text-white px-7 py-3.5 text-sm sm:text-base font-extrabold inline-flex items-center gap-2">
+                        <span>Subscribe →</span>
+                    </a>
+                    <a href="#sample" class="neo-btn bg-white hover:bg-beige-50 text-black px-7 py-3.5 text-sm sm:text-base font-extrabold inline-flex items-center gap-2">
+                        <span>📬 View sample digest</span>
+                    </a>
+                </div>
+
+                <!-- Micro-Copy -->
+                <div class="text-xs text-zinc-500 font-medium pt-1">
+                    Tailored to your stack · Delivered daily at 8:00 AM · Unsubscribe in 1 click
+                </div>
+
+            </div>
+
+            <!-- Right Column: Interactive Chatbot Assistant Card (Powered by Groq) -->
+            <div class="lg:col-span-5 flex justify-center">
+                <div class="neo-box bg-white p-5 sm:p-6 shadow-neo-lg w-full max-w-md flex flex-col justify-between space-y-4">
+                    
+                    <!-- Header -->
+                    <div class="flex items-center justify-between pb-3 border-b-2 border-black/10">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-purple-100 border-2 border-black flex items-center justify-center text-base shadow-neo-sm">
+                                🤖
+                            </div>
+                            <div>
+                                <div class="text-sm font-black text-black">StackPulse Assistant</div>
+                                <div class="text-[11px] font-bold text-emerald-600 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                                    Ask me anything about StackPulse
+                                </div>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-[10px] font-bold text-brand-purple">
+                            Groq AI
+                        </span>
+                    </div>
+
+                    <!-- Scrollable Chat Messages Container -->
+                    <div id="chat-messages" class="space-y-3 overflow-y-auto max-h-[220px] min-h-[170px] pr-1 scroll-smooth">
+                        <!-- Initial Welcome Bubble -->
+                        <div class="flex items-start gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-purple-100 border border-black flex items-center justify-center text-xs flex-shrink-0 shadow-sm">
+                                🤖
+                            </div>
+                            <div class="bg-beige-100 border-2 border-black/10 rounded-2xl rounded-tl-sm p-3 text-xs text-zinc-800 leading-relaxed shadow-sm">
+                                Hi! I'm the StackPulse assistant. Ask me anything about our sources, curation, security alerts, or how to customize your daily briefing.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Suggested Questions Pill Buttons -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <button type="button" 
+                                onclick="const inp=document.getElementById('chat-input'); inp.value='What sources do you monitor?'; document.getElementById('chat-form').requestSubmit();"
+                                class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-beige-100 border border-black/15 hover:border-black text-zinc-700 hover:text-black transition-all">
+                            What sources?
+                        </button>
+                        <button type="button" 
+                                onclick="const inp=document.getElementById('chat-input'); inp.value='How does personalization work?'; document.getElementById('chat-form').requestSubmit();"
+                                class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-beige-100 border border-black/15 hover:border-black text-zinc-700 hover:text-black transition-all">
+                            How it works?
+                        </button>
+                        <button type="button" 
+                                onclick="const inp=document.getElementById('chat-input'); inp.value='How do CVE security audits work?'; document.getElementById('chat-form').requestSubmit();"
+                                class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-beige-100 border border-black/15 hover:border-black text-zinc-700 hover:text-black transition-all">
+                            Security alerts?
+                        </button>
+                    </div>
+
+                    <!-- Interactive Bottom Chat Input Bar -->
+                    <div class="pt-2 border-t-2 border-black/10">
+                        <form id="chat-form"
+                              hx-post="/api/chat"
+                              hx-target="#chat-messages"
+                              hx-swap="beforeend"
+                              hx-indicator="#chat-spinner"
+                              hx-on::after-request="this.reset(); const c = document.getElementById('chat-messages'); c.scrollTop = c.scrollHeight;"
+                              class="flex items-center gap-2 bg-beige-50 border-2 border-black/20 rounded-xl p-1.5 focus-within:border-black transition-all">
+                            <input id="chat-input"
+                                   type="text" 
+                                   name="message" 
+                                   required 
+                                   autocomplete="off"
+                                   placeholder="Ask a quick question..." 
+                                   class="w-full bg-transparent px-3 py-1 text-xs text-black placeholder-zinc-400 focus:outline-none">
+                            <button type="submit" 
+                                    class="w-8 h-8 rounded-lg bg-brand-purple text-white border border-black flex items-center justify-center font-bold text-xs hover:bg-brand-purpleHover transition-transform shadow-neo-sm flex-shrink-0" 
+                                    title="Send Message">
+                                <span id="chat-spinner" class="htmx-indicator inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                                <span class="htmx-not-request">→</span>
+                            </button>
+                        </form>
+                        <div class="flex items-center justify-between text-[10px] font-bold text-zinc-400 mt-2 px-1">
+                            <span>Powered by Groq AI</span>
+                            <span>Max 2 sentences</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 2. VALUE PROPS (MINIMALIST, NO JARGON, EASY TO READ)                      -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="neo-box p-6 bg-white space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 border-2 border-black flex items-center justify-center text-lg shadow-neo-sm">
+                    🎯
+                </div>
+                <h3 class="text-base font-extrabold text-black">Curated for Your Stack</h3>
+                <p class="text-xs text-zinc-600 leading-relaxed">
+                    Select your languages and tools. StackPulse filters through hundreds of updates to send only what impacts your daily workflow.
+                </p>
+            </div>
+
+            <div class="neo-box p-6 bg-white space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 border-2 border-black flex items-center justify-center text-lg shadow-neo-sm">
+                    🛡️
+                </div>
+                <h3 class="text-base font-extrabold text-black">Proactive Security Advisories</h3>
+                <p class="text-xs text-zinc-600 leading-relaxed">
+                    Get alerted to critical CVEs affecting your packages before they reach production. Clear action items and version updates included.
+                </p>
+            </div>
+
+            <div class="neo-box p-6 bg-white space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 border-2 border-black flex items-center justify-center text-lg shadow-neo-sm">
+                    ⏱️
+                </div>
+                <h3 class="text-base font-extrabold text-black">2-Minute Morning Read</h3>
+                <p class="text-xs text-zinc-600 leading-relaxed">
+                    Zero filler, zero sponsored links. One beautiful email delivered at 8:00 AM with concise summaries and "Why it matters" takeaways.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 3. DOCUMENTS & ARCHITECTURE SECTION (#docs)                              -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="docs" class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+        
+        <!-- Section Header -->
+        <div class="text-center max-w-2xl mx-auto mb-12">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 text-brand-purple text-xs font-bold mb-2">
+                <span>📖 Product Documentation</span>
+            </div>
+            <h2 class="text-2xl sm:text-4xl font-black text-black">How It Works & Why It Matters</h2>
+            <p class="text-sm text-zinc-600 mt-2">
+                Learn how StackPulse curates signal from the noise, our design philosophy, and the security guardrails that keep your briefings reliable.
+            </p>
+        </div>
+
+        <div class="space-y-8">
+
+            <!-- Part A: How It Works (3 Steps) -->
+            <div class="neo-box p-6 sm:p-8 bg-white space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-black/10 pb-4">
+                    <div>
+                        <span class="text-[11px] font-black uppercase tracking-wider text-brand-purple">01 / Process Flow</span>
+                        <h3 class="text-xl font-extrabold text-black">How It Works</h3>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-beige-100 border border-black/10 text-zinc-700 w-fit">
+                        Autonomous Pipeline
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Step 1 -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-5 space-y-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-black text-sm">
+                            1
+                        </div>
+                        <h4 class="text-sm font-bold text-black">Ingest Daily Updates</h4>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Every morning, scrapers monitor GitHub Trending, OpenAI and Anthropic official releases, active CVE advisories, and top Hacker News threads.
+                        </p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-5 space-y-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-purple text-white flex items-center justify-center font-black text-sm">
+                            2
+                        </div>
+                        <h4 class="text-sm font-bold text-black">Filter by Your Stack</h4>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Updates are matched directly against your chosen languages, frameworks, and topics. Irrelevant noise, framework wars, and marketing spam are discarded.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-5 space-y-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">
+                            3
+                        </div>
+                        <h4 class="text-sm font-bold text-black">Deliver 2-Min Briefing</h4>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            At 8:00 AM, you receive a clean, 2-minute morning email with essential stories, actionable "Why it matters" developer takeaways, and security notices.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part B: Why It Matters (The Value) -->
+            <div class="neo-box p-6 sm:p-8 bg-white space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-black/10 pb-4">
+                    <div>
+                        <span class="text-[11px] font-black uppercase tracking-wider text-brand-purple">02 / Value Proposition</span>
+                        <h3 class="text-xl font-extrabold text-black">Why It Matters</h3>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-beige-100 border border-black/10 text-zinc-700 w-fit">
+                        Developer Productivity
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-5 space-y-2">
+                        <div class="text-2xl">⏳</div>
+                        <h4 class="text-sm font-bold text-black">Reclaim 30+ Minutes Every Morning</h4>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Developers spend too much time hopping between Twitter, Reddit, and various blogs trying not to fall behind. StackPulse eliminates doom-scrolling by distilling the entire day's tech ecosystem into a concise, high-signal read.
+                        </p>
+                    </div>
+
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-5 space-y-2">
+                        <div class="text-2xl">💡</div>
+                        <h4 class="text-sm font-bold text-black">Actionable "Why It Matters" Context</h4>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Rather than raw links and headlines, every item includes a concise developer takeaway explaining the architectural impact, performance benefits, or operational implications for your code.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part C: Trust, Proof & Guardrails Achievement -->
+            <div class="neo-box p-6 sm:p-8 bg-white space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-black/10 pb-4">
+                    <div>
+                        <span class="text-[11px] font-black uppercase tracking-wider text-emerald-700">03 / Trust & Reliability</span>
+                        <h3 class="text-xl font-extrabold text-black">Trust & Guardrails Achievement</h3>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 w-fit">
+                        Verified & Secure
+                    </span>
+                </div>
+
+                <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                    We designed StackPulse with built-in engineering guardrails so that every briefing is factual, secure, and respectful of your time:
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    <div class="p-4 rounded-xl bg-beige-50 border-2 border-black/10 space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🛡️</span>
+                            <h5 class="text-xs font-bold text-black">Automated CVE Security Audits</h5>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Daily cross-referencing with active National Vulnerability Database (NVD) CVEs. If an open flaw hits a dependency in your stack (e.g. PyTorch, FastAPI), you get immediate notice before deploying.
+                        </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-beige-50 border-2 border-black/10 space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🔍</span>
+                            <h5 class="text-xs font-bold text-black">Primary Source Verification</h5>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Announcements are sourced directly from authenticated lab blogs (OpenAI, Anthropic) and original Git repositories—preventing synthetic hallucinations or third-party rumor mills.
+                        </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-beige-50 border-2 border-black/10 space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🧠</span>
+                            <h5 class="text-xs font-bold text-black">7-Day Zero-Duplicate Memory</h5>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            Memory tracking logs all previously delivered content IDs over a rolling 7-day window. You are guaranteed never to see the same repository or article repeated.
+                        </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-beige-50 border-2 border-black/10 space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🔒</span>
+                            <h5 class="text-xs font-bold text-black">Strict Privacy & Zero Tracking</h5>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed">
+                            No advertising trackers, no sponsored click-pixels, and zero data sharing. Your email and preferences are solely used to deliver your personal briefing.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 4. INTERACTIVE PREFERENCE CONFIGURATION (#customize)                     -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="customize" class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+        <div class="mb-8">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 text-brand-purple text-xs font-bold mb-2">
+                <span>⚡ Quick Setup</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-black">Personalize Your Daily Briefing</h2>
+            <p class="text-sm text-zinc-600 mt-1 max-w-xl">
+                Enter your email to load existing preferences or set up a new profile. You can update your topics or unsubscribe at any time.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Column: Interactive Form (7 cols) -->
+            <div class="lg:col-span-7 neo-box p-6 sm:p-8 bg-white">
+                <!-- HTMX Form Container -->
+                <div id="form-container">
+                    {% include "partials/profile_form.html" %}
+                </div>
+
+                <!-- HTMX Response Area -->
+                <div id="form-response" class="mt-6"></div>
+            </div>
+
+            <!-- Right Column: Taste Profile Summary Card (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                {% include "partials/taste_vector.html" %}
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 5. SAMPLE DIGEST PREVIEW (#sample)                                        -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="sample" class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 text-brand-purple text-xs font-bold mb-2">
+                <span>📬 Email Preview</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-black">Tomorrow Morning's Inbox Experience</h2>
+            <p class="text-sm text-zinc-600 mt-1">
+                A live look at what StackPulse delivers every morning at 8:00 AM. Clean, concise, and distraction-free.
+            </p>
+        </div>
+
+        <!-- Simulated Email Client Card in Neo-Brutalist Theme -->
+        <div class="max-w-2xl mx-auto neo-box bg-white overflow-hidden shadow-neo-lg">
+            
+            <!-- Window Topbar -->
+            <div class="bg-beige-100 px-4 py-3 border-b-2 border-black flex items-center justify-between text-xs font-bold text-zinc-700">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-400 border border-black/40 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-400 border border-black/40 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-400 border border-black/40 inline-block"></span>
+                </div>
+                <div class="truncate text-black font-extrabold text-xs">
+                    ⚡ StackPulse · Morning Briefing
+                </div>
+                <div class="text-[11px] text-zinc-500 font-semibold">08:00 AM</div>
+            </div>
+
+            <!-- Email Body Content -->
+            <div class="p-5 sm:p-8 space-y-5 text-zinc-900 font-sans">
+                
+                <!-- Brand Header -->
+                <div class="text-center pb-4 border-b-2 border-black/10">
+                    <span class="inline-block bg-black text-white text-[11px] font-extrabold px-3 py-1 rounded-full tracking-wider">
+                        ⚡ STACKPULSE
+                    </span>
+                    <div class="text-[11px] text-zinc-500 font-bold mt-1.5">
+                        Daily Developer Briefing · {{ today }}
+                    </div>
+                </div>
+
+                <!-- Greeting -->
+                <div>
+                    <h3 class="text-base font-extrabold text-black">Hey Developer 👋</h3>
+                    <p class="text-xs text-zinc-600 leading-relaxed mt-1">
+                        Here is your daily briefing tailored to <strong>Python, LLMs, and System Design</strong>. Highlights today include an enterprise breakthrough from OpenAI, top inference tools, and a security advisory.
+                    </p>
+                </div>
+
+                <!-- Security Advisory Banner -->
+                <div class="p-3.5 rounded-xl bg-amber-50 border-2 border-amber-300 border-l-4 border-l-amber-600 text-xs">
+                    <div class="font-extrabold text-amber-950 uppercase tracking-wider text-[11px] mb-1 flex items-center gap-1.5">
+                        <span>🛡️</span>
+                        <span>SECURITY ADVISORY (YOUR STACK)</span>
+                    </div>
+                    <div class="text-amber-900 leading-relaxed">
+                        <strong>CVE-2026-24810 (High - 7.8):</strong> PyTorch remote code execution flaw in <code class="bg-amber-100 px-1 py-0.5 rounded font-mono text-[11px]">torch.load</code> when unpickling untrusted weights.
+                        <em>Action: Upgrade to torch &gt;= 2.6.1 immediately.</em>
+                    </div>
+                </div>
+
+                <!-- AI & Tech Barometer Widget -->
+                <div class="p-3.5 rounded-xl bg-slate-100 border-2 border-slate-300 border-l-4 border-l-slate-700 text-xs">
+                    <div class="font-extrabold text-slate-800 uppercase tracking-wider text-[11px] mb-1 flex items-center gap-1.5">
+                        <span>📊</span>
+                        <span>TODAY'S AI & TECH BAROMETER</span>
+                    </div>
+                    <div class="text-slate-700 leading-relaxed space-y-1">
+                        <div>• <strong>Model Pricing:</strong> Gemini 3.5 Flash-Lite: $0.075 / 1M tokens · Claude 3.5 Sonnet: $3.00 / 1M tokens</div>
+                        <div>• <strong>Tech Indices:</strong> NVDA: $138.25 (+1.4%) · MSFT: $422.10 (-0.3%) · GOOGL: $184.50 (+0.8%)</div>
+                    </div>
+                </div>
+
+                <!-- Balanced Items List -->
+                <div class="space-y-3.5">
+                    
+                    <!-- Item 1: Hacker News -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-3.5 shadow-sm">
+                        <div class="font-extrabold text-sm text-black mb-1 hover:text-brand-purple cursor-pointer transition-colors">
+                            The Components of Agent Memory: Architecture Deep Dive
+                        </div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="inline-block bg-[#ff6600] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🟠 Hacker News</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">LLMs</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">System Design</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed mb-2.5">
+                            A rigorous breakdown comparing episodic, procedural, and semantic working memory for production LLM agents. Discussions center around vector context caching vs. local SQLite stores.
+                        </p>
+                        <div class="bg-purple-50 border-l-2 border-l-brand-purple p-2 rounded-r text-xs">
+                            <span class="font-bold text-brand-purple uppercase text-[10px]">💡 Why it matters: </span>
+                            <span class="text-zinc-800">Directly addresses context window exhaustion and long-running state persistence in agent loops.</span>
+                        </div>
+                    </div>
+
+                    <!-- Item 2: OpenAI Official RSS -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-3.5 shadow-sm">
+                        <div class="font-extrabold text-sm text-black mb-1 hover:text-emerald-700 cursor-pointer transition-colors">
+                            Singapore Airlines Elevates Travel & Work With OpenAI Technology
+                        </div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="inline-block bg-[#10a37f] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🟢 OpenAI</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">OpenAI API</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Customer Support</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed mb-2.5">
+                            Singapore Airlines deployed OpenAI models across internal staff workflows and their customer-facing Kris assistant, notably doubling their Customer Satisfaction (CSAT) score in production.
+                        </p>
+                        <div class="bg-purple-50 border-l-2 border-l-brand-purple p-2 rounded-r text-xs">
+                            <span class="font-bold text-brand-purple uppercase text-[10px]">💡 Why it matters: </span>
+                            <span class="text-zinc-800">Provides a validated enterprise architecture blueprint for reducing hallucination in mission-critical customer operations.</span>
+                        </div>
+                    </div>
+
+                    <!-- Item 3: GitHub Trending -->
+                    <div class="bg-beige-50 border-2 border-black/10 rounded-xl p-3.5 shadow-sm">
+                        <div class="font-extrabold text-sm text-black mb-1 hover:text-zinc-700 cursor-pointer transition-colors">
+                            vllm-project/vllm
+                        </div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="inline-block bg-[#24292e] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🐙 GitHub</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Python</span>
+                            <span class="inline-block bg-white border border-black/10 text-zinc-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Inference</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 leading-relaxed mb-2.5">
+                            A high-throughput, memory-efficient LLM serving engine featuring PagedAttention. Trending today with native support for Gemini embeddings and speculative decoding.
+                        </p>
+                        <div class="bg-purple-50 border-l-2 border-l-brand-purple p-2 rounded-r text-xs">
+                            <span class="font-bold text-brand-purple uppercase text-[10px]">💡 Why it matters: </span>
+                            <span class="text-zinc-800">Essential framework for serving self-hosted open models at 4x the throughput of vanilla HuggingFace pipelines.</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Email Footer -->
+                <div class="text-center pt-3 border-t-2 border-black/10 text-[11px] text-zinc-500">
+                    <p class="font-bold text-zinc-700 m-0">StackPulse · Daily Developer Briefing</p>
+                    <p class="m-0 mt-0.5 text-zinc-400">Curated specifically for your tech stack & interests.</p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <!-- 6. FAQ SECTION (#faq)                                                    -->
+    <!-- ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="faq" class="max-w-4xl mx-auto px-4 sm:px-6 pt-4">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 text-brand-purple text-xs font-bold mb-2">
+                <span>💬 Questions & Answers</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-black">Frequently Asked Questions</h2>
+            <p class="text-sm text-zinc-600 mt-1">
+                Everything you need to know about StackPulse and your daily briefing.
+            </p>
+        </div>
+
+        <div class="space-y-4">
+            
+            <div class="neo-box p-5 bg-white">
+                <h4 class="text-base font-extrabold text-black mb-1.5">What sources does StackPulse monitor?</h4>
+                <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                    We continuously ingest updates from GitHub Trending, official AI research releases (OpenAI, Anthropic), active CVE security databases, and high-signal developer discussions on Hacker News.
+                </p>
+            </div>
+
+            <div class="neo-box p-5 bg-white">
+                <h4 class="text-base font-extrabold text-black mb-1.5">How does personalization work?</h4>
+                <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                    You simply select the languages, frameworks, and topics you care about. StackPulse matches the day's top updates against your profile so you only read stories that matter to your stack.
+                </p>
+            </div>
+
+            <div class="neo-box p-5 bg-white">
+                <h4 class="text-base font-extrabold text-black mb-1.5">When do I receive my email?</h4>
+                <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                    Your briefing is delivered at 8:00 AM every morning (or weekdays if you prefer). It takes just 2 minutes to read over morning coffee before your standup.
+                </p>
+            </div>
+
+            <div class="neo-box p-5 bg-white">
+                <h4 class="text-base font-extrabold text-black mb-1.5">Can I change my preferences or unsubscribe?</h4>
+                <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                    Yes! You can enter your email on this page at any time to update your topics, or click the 1-click unsubscribe link at the bottom of any email.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+{% endblock %}

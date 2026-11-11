@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StackPulse · Daily Developer Intelligence{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    
+    <!-- Tailwind CSS (Play CDN with custom Warm Beige Neo-Modern theme) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        beige: {
+                            50: '#FDFBF7',
+                            100: '#FAF8F5',
+                            200: '#F4F0E8',
+                            300: '#EAE4D6',
+                            400: '#DCD4C0',
+                            500: '#C2B69D',
+                        },
+                        brand: {
+                            purple: '#7C3AED',
+                            purpleHover: '#6D28D9',
+                            purpleLight: '#EDE9FE',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neo': '4px 4px 0px 0px #000000',
+                        'neo-sm': '2px 2px 0px 0px #000000',
+                        'neo-lg': '6px 6px 0px 0px #000000',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Light grid pattern background */
+        .grid-pattern {
+            background-color: #FAF8F5;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .neo-box {
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 1rem;
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+
+        .neo-btn {
+            border: 2px solid #000000;
+            border-radius: 0.75rem;
+            box-shadow: 3px 3px 0px 0px #000000;
+            transition: all 0.15s ease-in-out;
+        }
+        .neo-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px #000000;
+        }
+
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 150ms ease-in;
+        }
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="grid-pattern text-zinc-900 font-sans antialiased min-h-screen flex flex-col selection:bg-purple-200 selection:text-purple-900">
+
+    <!-- Navbar matching Embage Reference: Floating rounded container with dark border & hard shadow -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-5 sm:pt-7 w-full sticky top-0 z-50">
+        <header class="bg-white border-2 border-black rounded-2xl shadow-neo px-5 py-3.5 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="/" class="flex items-center gap-2 group">
+                <div class="w-8 h-8 rounded-lg bg-brand-purple border-2 border-black flex items-center justify-center text-white font-extrabold text-sm shadow-neo-sm group-hover:scale-105 transition-transform">
+                    ⚡
+                </div>
+                <span class="font-black text-xl tracking-tight text-black">StackPulse</span>
+            </a>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center gap-7 text-sm font-bold text-zinc-700">
+                <a href="#overview" class="hover:text-brand-purple transition-colors">Overview</a>
+                <a href="#docs" class="hover:text-brand-purple transition-colors">Documents</a>
+                <a href="#sample" class="hover:text-brand-purple transition-colors">Sample Digest</a>
+                <a href="#customize" class="hover:text-brand-purple transition-colors">Customize</a>
+                <a href="#faq" class="hover:text-brand-purple transition-colors">FAQ</a>
+            </nav>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3">
+                <a href="#sample" class="hidden sm:inline-flex text-xs font-bold text-zinc-600 hover:text-black">
+                    See sample
+                </a>
+                <a href="#customize" class="neo-btn bg-brand-purple text-white text-xs sm:text-sm font-bold px-4 py-2 hover:bg-brand-purpleHover">
+                    Try StackPulse
+                </a>
+            </div>
+        </header>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Clean Minimalist Footer -->
+    <footer class="border-t-2 border-black/10 bg-white/70 py-10 mt-20 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-base text-black">⚡ StackPulse</span>
+                <span class="text-xs text-zinc-400">· Daily developer news you actually care about.</span>
+            </div>
+
+            <!-- Signature requested by user -->
+            <div class="text-sm font-bold text-zinc-800">
+                Made with ❤️ by <span class="text-brand-purple">Noman Khan</span>
+            </div>
+
+            <div class="text-xs text-zinc-500 font-medium">
+                © 2026 StackPulse. Zero spam, unsubscribe anytime.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

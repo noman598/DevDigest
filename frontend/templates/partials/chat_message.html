@@ -1,0 +1,16 @@
+<!-- User Message Bubble -->
+<div class="flex justify-end">
+    <div class="bg-black text-white text-xs font-semibold px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%] shadow-neo-sm">
+        {{ user_message }}
+    </div>
+</div>
+
+<!-- Assistant Response Bubble -->
+<div class="flex items-start gap-2">
+    <div class="w-6 h-6 rounded-lg bg-purple-100 border border-black flex items-center justify-center text-xs flex-shrink-0 shadow-sm">
+        🤖
+    </div>
+    <div class="bg-beige-100 border-2 border-black/15 text-zinc-900 text-xs font-medium p-3 rounded-2xl rounded-tl-sm max-w-[85%] leading-relaxed shadow-sm">
+        {{ bot_response }}
+    </div>
+</div>
