@@ -7,7 +7,7 @@ async def main():
     
     # 1. Define initial state (test with hacker_news or all)
     initial_state = {
-        "source_name": "hacker_news",
+        "source_name": "ai_news_rss",
         "raw_items": [],
         "new_items_count": 0,
         "enrich_stats": {},

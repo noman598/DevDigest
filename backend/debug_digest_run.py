@@ -77,6 +77,8 @@ async def debug_digest(target_email: Optional[str] = None):
         "user_embedding": embedding,
         "liked_tags": user.liked_tags or [],
         "disliked_tags": user.disliked_tags or [],
+        "custom_interests": user.custom_interests or "",
+        "keyword_alerts": user.keyword_alerts or "",
         "include_why_matters": bool(user.include_why_matters),
         "candidates": [],
         "ranked_items": [],
@@ -114,7 +116,7 @@ async def debug_digest(target_email: Optional[str] = None):
             # Node 3: LLM Digest Generation
             elif node_name == "llm_digest_node":
                 digest = node_state.get("digest", {})
-                print(f"🧠 ChatGroq generated personalized digest:")
+                print(f"🧠 Google Gemini (gemini-3.5-flash-lite) generated personalized digest:")
                 print(f"   • Intro: \"{digest.get('intro', '')}\"")
                 print(f"   • Personalized 'Why it matters' one-liners:")
                 for it in digest.get("items", []):

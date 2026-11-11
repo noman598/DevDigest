@@ -2,13 +2,41 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Backend Pipeline",
+            "name": "Debug Flow 3 (Digest Pipeline)",
             "type": "debugpy",
             "request": "launch",
-            "module": "pipelines.personalization",
+            "program": "${workspaceFolder}/backend/debug_digest_run.py",
             "cwd": "${workspaceFolder}/backend",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+            "justMyCode": true
+        },
+                {
+            "name": "Debug Flow 1 (Content Pipeline)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/debug_run.py",
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+            "justMyCode": true
+        },
+        
+        {
+            "name": "Debug Flow 3 (Specific Email)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/debug_digest_run.py",
+            "args": ["--email", "your-email@example.com"],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
             "justMyCode": true
         }
     ]

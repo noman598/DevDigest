@@ -179,3 +179,23 @@ class LLMUsageLog(Base):
     user_id = Column(Integer, nullable=True)             # link back if digest/embedding
 
     created_at = Column(DateTime, default=datetime.now)
+
+
+class UserMemory(Base):
+    """
+    Long-Term & Episodic Memory for the Personal AI Curator Agent.
+    Tracks delivered article IDs (preventing repeats), recent topics (fatigue tracking),
+    and evolving notes written by the Agent about the user's technical interests.
+    """
+    __tablename__ = "user_memories"
+
+    id                 = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id            = Column(UUID(as_uuid=True), ForeignKey("user_profiles.id"), unique=True, nullable=False)
+    delivered_history  = Column(JSON, default=list)    # [{"external_id": "...", "title": "...", "delivered_at": "..."}]
+    recent_topics      = Column(JSON, default=dict)    # {"Python": 4, "Rust": 2, "LLM": 6} (fatigue tracking)
+    agent_notes        = Column(Text, default="")      # Evolving notes by the Agent about user's taste
+    last_curated_at    = Column(DateTime, default=datetime.now)
+    created_at         = Column(DateTime, default=datetime.now)
+    updated_at         = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    user = relationship("UserProfile", backref="memory", uselist=False)

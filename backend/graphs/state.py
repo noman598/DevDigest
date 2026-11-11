@@ -26,10 +26,15 @@ class UserDigestState(TypedDict, total=False):
     user_embedding: List[float]
     liked_tags: List[str]
     disliked_tags: List[str]
+    custom_interests: Optional[str]
+    keyword_alerts: Optional[str]
     include_why_matters: bool
+    memory_context: Optional[str]
     candidates: List[dict]
     ranked_items: List[dict]
     digest: Optional[dict]
+    market_pulse: Optional[str]
+    security_alert: Optional[str]
     email_html: Optional[str]
     email_sent: bool
     error: Optional[str]

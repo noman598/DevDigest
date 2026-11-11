@@ -5,17 +5,18 @@ import asyncio
 
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 
 from config import config
+from security.guardrails import sanitize_untrusted_scraped_data, validate_tool_arguments
 from services.llm import BudgetUsageCallback, is_within_budget
 from storage.db import SessionLocal as get_session
 from storage.models import ContentEnrichment, ContentItem, PipelineStatus
 from tools.hn_tools import fetch_hn_discussion, search_hn_discussions
 from utils.logger import log
 
-ENRICHMENT_MODEL = "qwen/qwen3.8-27b"
+ENRICHMENT_MODEL = getattr(config, "GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 # Tools available to the Enrichment Agent
 AVAILABLE_TOOLS = [fetch_hn_discussion, search_hn_discussions]
@@ -50,15 +51,15 @@ def _get_base_llm(content_item_id: Optional[str] = None):
     callbacks = [
         BudgetUsageCallback(
             operation="enrichment",
-            provider="groq",
+            provider="gemini",
             content_item_id=content_item_id,
         )
     ]
-    return ChatGroq(
+    return ChatGoogleGenerativeAI(
         model=ENRICHMENT_MODEL,
-        api_key=config.GROQ_API_KEY,
+        google_api_key=config.GEMINI_API_KEY,
         temperature=0.1,
-        max_tokens=1024,
+        max_output_tokens=1024,
         callbacks=callbacks,
     )
 
@@ -114,6 +115,9 @@ async def enrich_content_item(item: ContentItem) -> EnrichmentResult:
     source = (item.raw_data or {}).get("source", "")
     meta = (item.raw_data or {}).get("metadata", {})
 
+    # Guardrail 2: Sanitize and sandbox untrusted scraped web content
+    safe_content_text, _ = sanitize_untrusted_scraped_data(content_text, source=source)
+
     # If item is from Hacker News, engage tool-calling agent
     is_hn = source == "hacker_news" or "id" in meta or "hn_url" in meta
     comments_count = meta.get("comments_count", 0)
@@ -131,7 +135,7 @@ async def enrich_content_item(item: ContentItem) -> EnrichmentResult:
                     "You also have 'search_hn_discussions' if you need context on past discussions about a tool."
                 )
             ),
-            HumanMessage(content=f"Item to analyze:\n\n{content_text}"),
+            HumanMessage(content=f"Item to analyze:\n\n{safe_content_text}"),
         ]
 
         try:
@@ -143,6 +147,16 @@ async def enrich_content_item(item: ContentItem) -> EnrichmentResult:
                 for tc in agent_msg.tool_calls:
                     tool_name = tc.get("name")
                     tool_args = tc.get("args", {})
+
+                    # Guardrail 3: Validate tool arguments & boundaries
+                    is_valid, sec_err = validate_tool_arguments(tool_name, tool_args)
+                    if not is_valid:
+                        log.warning("security.tool_argument_blocked", tool=tool_name, reason=sec_err)
+                        tool_messages.append(
+                            ToolMessage(content=f"Tool call blocked by security guardrail: {sec_err}", tool_call_id=tc["id"])
+                        )
+                        continue
+
                     log.info("enricher.agent_invoking_tool", tool=tool_name, args=tool_args, item=item.external_id)
 
                     tool_fn = TOOL_MAP.get(tool_name)

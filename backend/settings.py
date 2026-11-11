@@ -8,6 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # LLM
     ANTHROPIC_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     # Email
     BREVO_API_KEY: str = ""
@@ -24,12 +27,12 @@ class Settings(BaseSettings):
     LANGSMITH_TRACING: bool = True
     LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
     LANGSMITH_API_KEY: str = ""
-    LANGSMITH_PROJECT: str = "devsnack-news"
+    LANGSMITH_PROJECT: str = "stackpulse-news"
 
     # Scraper
     GITHUB_TRENDING_LANGUAGE: str = ""
     GITHUB_TRENDING_SINCE: str = "daily"
-    USER_AGENT: str = "GitHubDigestBot/1.0 (personal project)"
+    USER_AGENT: str = "StackPulseBot/1.0 (developer digest)"
 
     # Load environment from .env file, ignoring extra legacy vars
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -4,7 +4,7 @@ summary using LangChain ChatGroq.
 """
 from typing import List
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 
 from config import config
@@ -47,11 +47,11 @@ def summarize_items(items: List) -> List[dict]:
 
     log.info("summarizing.start", count=len(items))
 
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        api_key=config.GROQ_API_KEY,
+    llm = ChatGoogleGenerativeAI(
+        model=getattr(config, "GEMINI_MODEL", "gemini-3.5-flash-lite"),
+        google_api_key=config.GEMINI_API_KEY,
         temperature=0.2,
-        max_tokens=2000,
+        max_output_tokens=2000,
     )
     chain = _SUMMARIZE_PROMPT | llm.with_structured_output(SummariesList)
 
